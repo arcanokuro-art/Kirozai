@@ -318,7 +318,9 @@ class CanvasArtwork extends CustomPainter {
     for (var i = 0; i < layers.length; i++) {
       if (!layers[i].visible) continue;
       canvas.saveLayer(Offset.zero & size, Paint());
-      for (final stroke in layers[i].strokes) _paintStroke(canvas, stroke);
+      for (final stroke in layers[i].strokes) {
+        _paintStroke(canvas, stroke);
+      }
       if (i == selected && preview.isNotEmpty) {
         _paintStroke(canvas, Stroke(preview, previewColor, previewWidth, previewErase));
       }
