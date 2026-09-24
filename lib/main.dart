@@ -215,13 +215,17 @@ class _EditorState extends State<Editor> {
       if (mounted && identical(_document, snapshot)) {
         setState(() => _dirty = false);
       }
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Proyecto guardado en ${file.path}')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Proyecto guardado en ${file.path}')),
+        );
+      }
     } catch (error) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No se pudo guardar: $error')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No se pudo guardar: $error')),
+        );
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -257,9 +261,11 @@ class _EditorState extends State<Editor> {
         _currentPoints.clear();
       });
     } catch (error) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No se pudo abrir el proyecto: $error')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No se pudo abrir el proyecto: $error')),
+        );
+      }
     }
   }
 
