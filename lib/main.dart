@@ -503,7 +503,7 @@ class _EditorState extends State<Editor> {
             dense: true,
             selected: i == _document.selected,
             title: Text(_document.layers[i].name),
-            subtitle: Row(mainAxisSize: MainAxisSize.min, children: [
+            subtitle: Wrap(spacing: 0, runSpacing: 0, children: [
               IconButton(
                 tooltip: 'Subir ${_document.layers[i].name}',
                 icon: const Icon(Icons.arrow_upward, size: 18),
