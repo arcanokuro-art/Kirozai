@@ -19,4 +19,6 @@ Instala Flutter y usa `flutter create --platforms=android,ios,windows,macos,linu
 
 GitHub Actions comprueba el código y genera un APK Android de prueba. También intenta compilar las versiones de Linux, Windows y macOS; los archivos de cada plataforma aparecen como artefactos en la ejecución correspondiente cuando el trabajo termina correctamente. Las compilaciones de escritorio son pruebas de distribución, no instaladores firmados.
 
+El flujo de iOS intenta generar `Runner.app` sin firma. Para instalarlo en un iPhone se necesita configurar firma, perfil de aprovisionamiento y una compilación distribuible en el entorno de Apple.
+
 Los proyectos de plataforma se generan a partir de esta base y se añadirán al repositorio después de comprobar la compilación en los sistemas de destino. La exportación funciona con la interfaz de compartir del sistema; la edición de imágenes importadas y los formatos adicionales aún no están implementados.
