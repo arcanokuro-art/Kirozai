@@ -17,6 +17,6 @@ Primer prototipo de un editor de dibujo para Android y Linux hecho con Flutter. 
 
 Instala Flutter y usa `flutter create --platforms=android,linux .` una vez para generar los proyectos de plataforma (se necesitan las herramientas de compilación correspondientes a cada sistema). Luego ejecuta `flutter pub get`, `flutter run`, `flutter analyze` y `flutter test`.
 
-GitHub Actions comprueba el código y genera un APK Android de prueba (`app-debug.apk`) y un paquete Linux instalable (`kirozai_0.1.0_amd64.deb`). Ambos aparecen como artefactos de la ejecución cuando sus trabajos terminan correctamente. El paquete `.deb` está destinado a sistemas Linux de 64 bits compatibles con Debian o Ubuntu; otras arquitecturas requieren una compilación propia. El APK es de depuración para pruebas, no una versión final firmada para distribución.
+GitHub Actions comprueba el código y genera un APK Android de prueba (`app-release.apk`) y un paquete Linux instalable (`kirozai_0.1.0_amd64.deb`). Ambos aparecen como artefactos de la ejecución cuando sus trabajos terminan correctamente. El paquete `.deb` está destinado a sistemas Linux de 64 bits compatibles con Debian o Ubuntu; otras arquitecturas requieren una compilación propia. El APK de modo release utiliza la clave de depuración del proyecto Flutter generado; es para pruebas y no para publicar en una tienda.
 
 Los proyectos de plataforma se generan a partir de esta base. La exportación funciona con la interfaz de compartir del sistema; la edición de imágenes importadas y los formatos adicionales aún no están implementados.
