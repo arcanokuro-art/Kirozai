@@ -26,6 +26,8 @@ void main() {
     await tester.pumpWidget(const KirozaiApp());
     await tester.tap(find.byTooltip('Agregar capa'));
     await tester.pump();
+    await tester.ensureVisible(find.byTooltip('Renombrar Capa 2'));
+    await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Renombrar Capa 2'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'Boceto');
@@ -33,6 +35,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Boceto'), findsOneWidget);
 
+    await tester.ensureVisible(find.byTooltip('Bajar Boceto'));
+    await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Bajar Boceto'));
     await tester.pump();
     final boceto = tester.getTopLeft(find.text('Boceto'));
@@ -57,7 +61,8 @@ void main() {
     final restored = DrawingDocument.fromJson(original.toJson());
     expect(restored.layers.length, 2);
     expect(restored.layers[0].strokes[0].points.last, const Offset(5, 8));
-    expect(restored.layers[0].strokes[0].color, Colors.red);
+    expect(restored.layers[0].strokes[0].color.toARGB32(),
+        Colors.red.toARGB32());
     expect(restored.layers[0].strokes[1].erase, isTrue);
     expect(restored.layers[0].strokes[2].shape, StrokeShape.rectangle);
     expect(restored.layers[1].visible, isFalse);
