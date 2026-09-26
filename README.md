@@ -1,6 +1,6 @@
 # Kirozai
 
-Primer prototipo de un editor de dibujo multiplataforma hecho con Flutter. Este proyecto es nuevo: el código de Pinta no está copiado aquí.
+Primer prototipo de un editor de dibujo para Android y Linux hecho con Flutter. Este proyecto es nuevo: el código de Pinta no está copiado aquí.
 
 ## Funciones actuales
 
@@ -15,10 +15,8 @@ Primer prototipo de un editor de dibujo multiplataforma hecho con Flutter. Este 
 
 ## Ejecutar
 
-Instala Flutter y usa `flutter create --platforms=android,ios,windows,macos,linux .` una vez para generar los proyectos de plataforma (se necesitan las herramientas de compilación correspondientes a cada sistema). Luego ejecuta `flutter pub get`, `flutter run`, `flutter analyze` y `flutter test`.
+Instala Flutter y usa `flutter create --platforms=android,linux .` una vez para generar los proyectos de plataforma (se necesitan las herramientas de compilación correspondientes a cada sistema). Luego ejecuta `flutter pub get`, `flutter run`, `flutter analyze` y `flutter test`.
 
-GitHub Actions comprueba el código y genera un APK Android de prueba. También intenta compilar las versiones de Linux, Windows y macOS; los archivos de cada plataforma aparecen como artefactos en la ejecución correspondiente cuando el trabajo termina correctamente. Las compilaciones de escritorio son pruebas de distribución, no instaladores firmados.
+GitHub Actions comprueba el código y genera un APK Android de prueba (`app-debug.apk`) y un paquete Linux instalable (`kirozai_0.1.0_amd64.deb`). Ambos aparecen como artefactos de la ejecución cuando sus trabajos terminan correctamente. El paquete `.deb` está destinado a sistemas Linux de 64 bits compatibles con Debian o Ubuntu; otras arquitecturas requieren una compilación propia. El APK es de depuración para pruebas, no una versión final firmada para distribución.
 
-El flujo de iOS intenta generar `Runner.app` sin firma. Para instalarlo en un iPhone se necesita configurar firma, perfil de aprovisionamiento y una compilación distribuible en el entorno de Apple.
-
-Los proyectos de plataforma se generan a partir de esta base y se añadirán al repositorio después de comprobar la compilación en los sistemas de destino. La exportación funciona con la interfaz de compartir del sistema; la edición de imágenes importadas y los formatos adicionales aún no están implementados.
+Los proyectos de plataforma se generan a partir de esta base. La exportación funciona con la interfaz de compartir del sistema; la edición de imágenes importadas y los formatos adicionales aún no están implementados.

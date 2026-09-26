@@ -1,10 +1,10 @@
-name: Flutter checks
+name: Kirozai Android y Linux
 on:
   push:
   pull_request:
 
 jobs:
-  test:
+  android:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -12,7 +12,7 @@ jobs:
         with:
           channel: stable
           cache: true
-      - run: flutter create --platforms=android,linux .
+      - run: flutter create --platforms=android .
       - run: rm -f test/widget_test.dart
       - run: flutter pub get
       - run: flutter analyze
@@ -20,55 +20,25 @@ jobs:
       - run: flutter build apk --debug
       - uses: actions/upload-artifact@v4
         with:
-          name: kirozai-android-debug
+          name: kirozai-android-apk
           path: build/app/outputs/flutter-apk/app-debug.apk
-
-  desktop:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: linux
-            runner: ubuntu-latest
-            output: build/linux/x64/release/bundle/
-          - platform: windows
-            runner: windows-latest
-            output: build/windows/x64/runner/Release/
-          - platform: macos
-            runner: macos-latest
-            output: build/macos/Build/Products/Release/*.app/
-    runs-on: ${{ matrix.runner }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
-      - name: Dependencias de Linux
-        if: matrix.platform == 'linux'
-        run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libstdc++-12-dev
-      - run: flutter create --platforms=${{ matrix.platform }} .
-      - run: flutter pub get
-      - run: flutter build ${{ matrix.platform }} --release
-      - uses: actions/upload-artifact@v4
-        with:
-          name: kirozai-${{ matrix.platform }}
-          path: ${{ matrix.output }}
           if-no-files-found: error
 
-  ios:
-    runs-on: macos-latest
+  linux:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
-      - run: flutter create --platforms=ios .
+      - run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libstdc++-12-dev
+      - run: flutter create --platforms=linux .
       - run: flutter pub get
-      - run: flutter build ios --release --no-codesign
+      - run: flutter build linux --release
+      - run: bash packaging/build-deb.sh
       - uses: actions/upload-artifact@v4
         with:
-          name: kirozai-ios-unsigned
-          path: build/ios/iphoneos/Runner.app/
+          name: kirozai-linux-deb
+          path: dist/kirozai_0.1.0_amd64.deb
           if-no-files-found: error
