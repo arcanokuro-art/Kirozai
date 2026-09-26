@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
@@ -24,14 +26,20 @@ class Stroke {
 enum StrokeShape { freehand, line, rectangle }
 
 class DrawingLayer {
-  const DrawingLayer(this.name, this.strokes, {this.visible = true});
+  const DrawingLayer(this.name, this.strokes,
+      {this.visible = true, this.imageBytes, this.image});
   final String name;
   final List<Stroke> strokes;
   final bool visible;
+  final Uint8List? imageBytes;
+  final ui.Image? image;
 
-  DrawingLayer copyWith({String? name, List<Stroke>? strokes, bool? visible}) =>
+  DrawingLayer copyWith({String? name, List<Stroke>? strokes, bool? visible,
+      Uint8List? imageBytes, ui.Image? image}) =>
       DrawingLayer(name ?? this.name, strokes ?? this.strokes,
-          visible: visible ?? this.visible);
+          visible: visible ?? this.visible,
+          imageBytes: imageBytes ?? this.imageBytes,
+          image: image ?? this.image);
 }
 
 class DrawingDocument {
@@ -47,6 +55,8 @@ class DrawingDocument {
             {
               'name': layer.name,
               'visible': layer.visible,
+              if (layer.imageBytes != null)
+                'imageData': base64Encode(layer.imageBytes!),
               'strokes': [
                 for (final stroke in layer.strokes)
                   {
@@ -87,7 +97,9 @@ class DrawingDocument {
             stroke['erase'] as bool, shape: shape);
       }).toList();
       return DrawingLayer(layer['name'] as String, strokes,
-          visible: layer['visible'] as bool);
+          visible: layer['visible'] as bool,
+          imageBytes: layer['imageData'] == null
+              ? null : base64Decode(layer['imageData'] as String));
     }).toList();
     final selected = json['selected'] as int;
     if (layers.isEmpty || selected < 0 || selected >= layers.length) {
@@ -205,6 +217,43 @@ class _EditorState extends State<Editor> {
     return File('${directory.path}/kirozai-project.json');
   }
 
+  Future<ui.Image> _decodeImage(Uint8List bytes) async {
+    final codec = await ui.instantiateImageCodec(bytes, targetWidth: 2048);
+    try {
+      return (await codec.getNextFrame()).image;
+    } finally {
+      codec.dispose();
+    }
+  }
+
+  Future<void> _importImage() async {
+    try {
+      const images = XTypeGroup(label: 'Imágenes',
+          extensions: ['png', 'jpg', 'jpeg', 'webp'],
+          mimeTypes: ['image/png', 'image/jpeg', 'image/webp']);
+      final file = await openFile(acceptedTypeGroups: [images]);
+      if (file == null) return;
+      if (await file.length() > 20 * 1024 * 1024) {
+        throw const FormatException('La imagen supera 20 MB');
+      }
+      final bytes = await file.readAsBytes();
+      final image = await _decodeImage(bytes);
+      if (!mounted) {
+        image.dispose();
+        return;
+      }
+      final layers = [..._document.layers,
+        DrawingLayer(file.name, const [], imageBytes: bytes, image: image)];
+      _commit(DrawingDocument(layers, layers.length - 1));
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No se pudo importar la imagen: $error')),
+        );
+      }
+    }
+  }
+
   Future<void> _saveProject() async {
     if (_saving) return;
     setState(() => _saving = true);
@@ -251,7 +300,14 @@ class _EditorState extends State<Editor> {
     try {
       final file = await _projectFile();
       final decoded = jsonDecode(await file.readAsString()) as Map<String, dynamic>;
-      final document = DrawingDocument.fromJson(decoded);
+      final stored = DrawingDocument.fromJson(decoded);
+      final layers = <DrawingLayer>[];
+      for (final layer in stored.layers) {
+        final bytes = layer.imageBytes;
+        layers.add(bytes == null ? layer : layer.copyWith(
+            image: await _decodeImage(bytes)));
+      }
+      final document = DrawingDocument(layers, stored.selected);
       if (!mounted) return;
       setState(() {
         _document = document;
@@ -582,11 +638,13 @@ class _EditorState extends State<Editor> {
           tooltip: 'Archivo',
           onSelected: (action) {
             if (action == 'new') _newProject();
+            if (action == 'import') _importImage();
             if (action == 'open') _openProject();
             if (action == 'save') _saveProject();
           },
           itemBuilder: (context) => [
             const PopupMenuItem(value: 'new', child: Text('Nuevo dibujo')),
+            const PopupMenuItem(value: 'import', child: Text('Importar imagen')),
             const PopupMenuItem(value: 'open', child: Text('Abrir proyecto guardado')),
             PopupMenuItem(value: 'save', enabled: !_saving,
                 child: const Text('Guardar proyecto')),
@@ -659,6 +717,10 @@ class CanvasArtwork extends CustomPainter {
     for (var i = 0; i < layers.length; i++) {
       if (!layers[i].visible) continue;
       canvas.saveLayer(Offset.zero & size, Paint());
+      if (layers[i].image != null) {
+        paintImage(canvas: canvas, rect: Offset.zero & size,
+            image: layers[i].image!, fit: BoxFit.contain);
+      }
       for (final stroke in layers[i].strokes) {
         _paintStroke(canvas, stroke);
       }

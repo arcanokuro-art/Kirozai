@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -49,7 +51,7 @@ void main() {
   });
 
   test('editable project preserves layers, points and eraser', () {
-    const original = DrawingDocument([
+    final original = DrawingDocument([
       DrawingLayer('Base', [
         Stroke([Offset(2, 3), Offset(5, 8)], Colors.red, 7, false),
         Stroke([Offset(4, 6)], Colors.black, 9, true),
@@ -57,15 +59,17 @@ void main() {
             shape: StrokeShape.rectangle),
       ]),
       DrawingLayer('Oculta', [], visible: false),
+      DrawingLayer('Foto', [], imageBytes: Uint8List.fromList([1, 2, 3])),
     ], 0);
     final restored = DrawingDocument.fromJson(original.toJson());
-    expect(restored.layers.length, 2);
+    expect(restored.layers.length, 3);
     expect(restored.layers[0].strokes[0].points.last, const Offset(5, 8));
     expect(restored.layers[0].strokes[0].color.toARGB32(),
         Colors.red.toARGB32());
     expect(restored.layers[0].strokes[1].erase, isTrue);
     expect(restored.layers[0].strokes[2].shape, StrokeShape.rectangle);
     expect(restored.layers[1].visible, isFalse);
+    expect(restored.layers[2].imageBytes, orderedEquals([1, 2, 3]));
     expect(restored.selected, 0);
     expect(() => DrawingDocument.fromJson({'version': 1, 'selected': 0,
       'layers': []}), throwsFormatException);

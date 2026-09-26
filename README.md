@@ -12,6 +12,7 @@ Primer prototipo de un editor de dibujo para Android y Linux hecho con Flutter. 
 - Guardar y volver a abrir el proyecto editable en el almacenamiento privado de la aplicación (`kirozai-project.json`). Guardar sustituye el proyecto anterior; exportar PNG crea una imagen para compartir.
 - El título muestra un punto cuando hay cambios pendientes; abrir el proyecto guardado solicita confirmación antes de descartar esos cambios.
 - Nuevo dibujo con confirmación antes de reemplazar el lienzo actual.
+- Importar imágenes PNG, JPEG o WebP como capa para dibujar encima; la imagen importada queda incluida en el proyecto editable.
 
 ## Ejecutar
 
@@ -19,4 +20,4 @@ Instala Flutter y usa `flutter create --platforms=android,linux .` una vez para 
 
 GitHub Actions comprueba el código y genera un APK Android de prueba (`app-release.apk`) y un paquete Linux instalable (`kirozai_0.1.0_amd64.deb`). Ambos aparecen como artefactos de la ejecución cuando sus trabajos terminan correctamente. El paquete `.deb` está destinado a sistemas Linux de 64 bits compatibles con Debian o Ubuntu; otras arquitecturas requieren una compilación propia. El APK de modo release utiliza la clave de depuración del proyecto Flutter generado; es para pruebas y no para publicar en una tienda.
 
-Los proyectos de plataforma se generan a partir de esta base. La exportación funciona con la interfaz de compartir del sistema; la edición de imágenes importadas y los formatos adicionales aún no están implementados.
+Los proyectos de plataforma se generan a partir de esta base. La exportación funciona con la interfaz de compartir del sistema. Las imágenes importadas se ajustan al lienzo de 1024 × 768 sin deformarse; todavía no hay controles para transformarlas, recortarlas o editar sus píxeles originales.
