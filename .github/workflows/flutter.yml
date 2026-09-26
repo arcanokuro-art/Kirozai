@@ -22,3 +22,36 @@ jobs:
         with:
           name: kirozai-android-debug
           path: build/app/outputs/flutter-apk/app-debug.apk
+
+  desktop:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux
+            runner: ubuntu-latest
+            output: build/linux/x64/release/bundle/
+          - platform: windows
+            runner: windows-latest
+            output: build/windows/x64/runner/Release/
+          - platform: macos
+            runner: macos-latest
+            output: build/macos/Build/Products/Release/*.app/
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Dependencias de Linux
+        if: matrix.platform == 'linux'
+        run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libstdc++-12-dev
+      - run: flutter create --platforms=${{ matrix.platform }} .
+      - run: flutter pub get
+      - run: flutter build ${{ matrix.platform }} --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kirozai-${{ matrix.platform }}
+          path: ${{ matrix.output }}
+          if-no-files-found: error

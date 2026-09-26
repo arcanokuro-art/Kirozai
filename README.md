@@ -17,4 +17,6 @@ Primer prototipo de un editor de dibujo multiplataforma hecho con Flutter. Este 
 
 Instala Flutter y usa `flutter create --platforms=android,ios,windows,macos,linux .` una vez para generar los proyectos de plataforma (se necesitan las herramientas de compilación correspondientes a cada sistema). Luego ejecuta `flutter pub get`, `flutter run`, `flutter analyze` y `flutter test`.
 
+GitHub Actions comprueba el código y genera un APK Android de prueba. También intenta compilar las versiones de Linux, Windows y macOS; los archivos de cada plataforma aparecen como artefactos en la ejecución correspondiente cuando el trabajo termina correctamente. Las compilaciones de escritorio son pruebas de distribución, no instaladores firmados.
+
 Los proyectos de plataforma se generan a partir de esta base y se añadirán al repositorio después de comprobar la compilación en los sistemas de destino. La exportación funciona con la interfaz de compartir del sistema; la edición de imágenes importadas y los formatos adicionales aún no están implementados.
