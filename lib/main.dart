@@ -217,7 +217,8 @@ class _EditorState extends State<Editor> {
   }
 
   Future<ui.Image> _decodeImage(Uint8List bytes) async {
-    final codec = await ui.instantiateImageCodec(bytes, targetWidth: 2048);
+    final codec = await ui.instantiateImageCodec(bytes,
+        targetWidth: 2048, allowUpscaling: false);
     try {
       return (await codec.getNextFrame()).image;
     } finally {
