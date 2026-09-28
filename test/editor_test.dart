@@ -7,6 +7,21 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kirozai/main.dart';
 
 void main() {
+  testWidgets('Android back asks before losing unsaved changes', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 850));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(const KirozaiApp());
+    await tester.tap(find.byTooltip('Agregar capa'));
+    await tester.pump();
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Cambios sin guardar'), findsOneWidget);
+    expect(find.text('Guardar y salir'), findsOneWidget);
+    await tester.tap(find.text('Cancelar'));
+    await tester.pumpAndSettle();
+    expect(find.text('Capa 2'), findsOneWidget);
+  });
+
   testWidgets('choosing a tool closes the drawer on a small screen',
       (tester) async {
     tester.view.physicalSize = const Size(400, 800);

@@ -12,6 +12,7 @@ Prototipo de un editor de dibujo para Android hecho con Flutter. Por ahora el de
 - El guardado escribe primero un archivo temporal y después reemplaza el proyecto para evitar dejarlo incompleto si se interrumpe la escritura.
 - Compartir el proyecto editable como JSON e importarlo de nuevo mediante el selector de archivos de Android; pide confirmación si hay cambios sin guardar. Un proyecto importado queda marcado como pendiente hasta guardarlo en la aplicación.
 - En pantallas pequeñas, seleccionar una herramienta cierra el panel lateral para volver al lienzo.
+- Al pulsar Atrás en Android con cambios pendientes, se puede guardar, salir sin guardar o cancelar.
 - El título muestra un punto cuando hay cambios pendientes; abrir el proyecto guardado solicita confirmación antes de descartar esos cambios.
 - Nuevo dibujo con confirmación antes de reemplazar el lienzo actual.
 - Importar imágenes PNG, JPEG o WebP como capa para dibujar encima; la imagen importada queda incluida en el proyecto editable.

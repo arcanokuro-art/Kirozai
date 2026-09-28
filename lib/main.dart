@@ -158,6 +158,7 @@ class _EditorState extends State<Editor> {
   bool _exporting = false;
   bool _saving = false;
   bool _sharingProject = false;
+  bool _exitPromptOpen = false;
   bool _dirty = false;
   int? _activePointer;
   final Set<int> _pointersOnCanvas = {};
@@ -266,8 +267,8 @@ class _EditorState extends State<Editor> {
     }
   }
 
-  Future<void> _saveProject() async {
-    if (_saving) return;
+  Future<bool> _saveProject() async {
+    if (_saving) return false;
     setState(() => _saving = true);
     try {
       final snapshot = _document;
@@ -281,14 +282,43 @@ class _EditorState extends State<Editor> {
           SnackBar(content: Text('Proyecto guardado en ${file.path}')),
         );
       }
+      return mounted && !_dirty;
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('No se pudo guardar: $error')),
         );
       }
+      return false;
     } finally {
       if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _confirmExit() async {
+    if (_exitPromptOpen) return;
+    _exitPromptOpen = true;
+    try {
+      final choice = await showDialog<String>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Cambios sin guardar'),
+          content: const Text('¿Deseas guardar el dibujo antes de salir?'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogContext, 'cancel'),
+                child: const Text('Cancelar')),
+            TextButton(onPressed: () => Navigator.pop(dialogContext, 'discard'),
+                child: const Text('Salir sin guardar')),
+            FilledButton(onPressed: () => Navigator.pop(dialogContext, 'save'),
+                child: const Text('Guardar y salir')),
+          ],
+        ),
+      );
+      if (!mounted || choice == null || choice == 'cancel') return;
+      if (choice == 'save' && !await _saveProject()) return;
+      await SystemNavigator.pop();
+    } finally {
+      _exitPromptOpen = false;
     }
   }
 
@@ -681,7 +711,12 @@ class _EditorState extends State<Editor> {
       child: ListView(padding: const EdgeInsets.all(16), children: [controls]),
     );
 
-    return CallbackShortcuts(
+    return PopScope(
+      canPop: !_dirty,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && _dirty) _confirmExit();
+      },
+      child: CallbackShortcuts(
       bindings: {
         const SingleActivator(LogicalKeyboardKey.keyZ, control: true): _undoAction,
         const SingleActivator(LogicalKeyboardKey.keyZ, meta: true): _undoAction,
@@ -760,7 +795,7 @@ class _EditorState extends State<Editor> {
       ]),
         ),
       ),
-    );
+    ));
   }
 
   Widget _toolButton(String title, IconData icon, CanvasTool tool) =>
