@@ -149,6 +149,7 @@ class _EditorState extends State<Editor> {
   bool _saving = false;
   bool _dirty = false;
   int? _activePointer;
+  final Set<int> _pointersOnCanvas = {};
 
   Future<void> _newProject() async {
     final confirmed = await showDialog<bool>(
@@ -415,6 +416,12 @@ class _EditorState extends State<Editor> {
   }
 
   void _startStroke(PointerDownEvent event) {
+    _pointersOnCanvas.add(event.pointer);
+    if (_pointersOnCanvas.length > 1) {
+      _activePointer = null;
+      setState(() => _currentPoints.clear());
+      return;
+    }
     if (_tool == CanvasTool.navigate) return;
     if (!_document.layers[_document.selected].visible) return;
     if (_activePointer != null) {
@@ -440,6 +447,7 @@ class _EditorState extends State<Editor> {
   }
 
   void _endStroke(PointerEvent event) {
+    _pointersOnCanvas.remove(event.pointer);
     if (event.pointer != _activePointer) return;
     _activePointer = null;
     if (event is PointerCancelEvent) {
@@ -659,7 +667,7 @@ class _EditorState extends State<Editor> {
           child: Center(child: InteractiveViewer(
             transformationController: _transform,
             panEnabled: _tool == CanvasTool.navigate,
-            scaleEnabled: _tool == CanvasTool.navigate,
+            scaleEnabled: true,
             minScale: 0.2, maxScale: 6,
             constrained: false,
             child: Listener(

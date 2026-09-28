@@ -1,4 +1,4 @@
-name: Kirozai Android y Linux
+name: Kirozai Android
 on:
   push:
   pull_request:
@@ -22,23 +22,4 @@ jobs:
         with:
           name: kirozai-android-apk
           path: build/app/outputs/flutter-apk/app-release.apk
-          if-no-files-found: error
-
-  linux:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
-      - run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libstdc++-12-dev
-      - run: flutter create --platforms=linux .
-      - run: flutter pub get
-      - run: flutter build linux --release
-      - run: bash packaging/build-deb.sh
-      - uses: actions/upload-artifact@v4
-        with:
-          name: kirozai-linux-deb
-          path: dist/kirozai_0.1.0_amd64.deb
           if-no-files-found: error

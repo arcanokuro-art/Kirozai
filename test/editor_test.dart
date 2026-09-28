@@ -4,6 +4,28 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kirozai/main.dart';
 
 void main() {
+  testWidgets('two fingers zoom while brush is selected without drawing',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 850));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(const KirozaiApp());
+    final viewer = find.byType(InteractiveViewer);
+    expect(tester.widget<InteractiveViewer>(viewer).scaleEnabled, isTrue);
+    final center = tester.getCenter(viewer);
+    final first = await tester.startGesture(center + const Offset(-60, 0), pointer: 1);
+    final second = await tester.startGesture(center + const Offset(60, 0), pointer: 2);
+    await tester.pump();
+    await first.moveBy(const Offset(-70, 0));
+    await second.moveBy(const Offset(70, 0));
+    await tester.pump();
+    expect(tester.widget<InteractiveViewer>(viewer)
+        .transformationController!.value.getMaxScaleOnAxis(), greaterThan(1));
+    await first.up();
+    await second.up();
+    await tester.pump();
+    expect(tester.widget<IconButton>(find.byTooltip('Deshacer')).onPressed, isNull);
+  });
+
   testWidgets('editor opens and supports layer creation and undo', (tester) async {
     await tester.binding.setSurfaceSize(const Size(1200, 850));
     addTearDown(() => tester.binding.setSurfaceSize(null));
