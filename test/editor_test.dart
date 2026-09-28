@@ -9,9 +9,14 @@ import 'package:kirozai/main.dart';
 void main() {
   testWidgets('choosing a tool closes the drawer on a small screen',
       (tester) async {
-    await tester.binding.setSurfaceSize(const Size(400, 800));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
+    tester.view.physicalSize = const Size(400, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
     await tester.pumpWidget(const KirozaiApp());
+    expect(tester.widget<Scaffold>(find.byType(Scaffold)).drawer, isNotNull);
     tester.state<ScaffoldState>(find.byType(Scaffold)).openDrawer();
     await tester.pumpAndSettle();
     expect(tester.state<ScaffoldState>(find.byType(Scaffold)).isDrawerOpen, isTrue);
