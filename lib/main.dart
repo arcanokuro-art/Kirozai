@@ -327,12 +327,15 @@ class _EditorState extends State<Editor> {
           throw const FormatException('El proyecto supera 50 MB');
         }
       } catch (error) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('No se pudo seleccionar el proyecto: $error')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('No se pudo seleccionar el proyecto: $error')),
+          );
+        }
         return;
       }
     }
+    if (!mounted) return;
     if (_dirty) {
       final confirmed = await showDialog<bool>(
         context: context,
