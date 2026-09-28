@@ -7,6 +7,25 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kirozai/main.dart';
 
 void main() {
+  testWidgets('ellipse tool draws an undoable shape', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 850));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(const KirozaiApp());
+    await tester.tap(find.text('Elipse'));
+    await tester.pump();
+    final center = tester.getCenter(find.byType(InteractiveViewer));
+    await tester.dragFrom(center - const Offset(45, 30), const Offset(90, 60));
+    await tester.pump();
+    expect(tester.widget<IconButton>(find.ancestor(
+      of: find.byTooltip('Deshacer'), matching: find.byType(IconButton),
+    )).onPressed, isNotNull);
+    await tester.tap(find.byTooltip('Deshacer'));
+    await tester.pump();
+    expect(tester.widget<IconButton>(find.ancestor(
+      of: find.byTooltip('Deshacer'), matching: find.byType(IconButton),
+    )).onPressed, isNull);
+  });
+
   testWidgets('Android back asks before losing unsaved changes', (tester) async {
     await tester.binding.setSurfaceSize(const Size(1200, 850));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -144,6 +163,8 @@ void main() {
         Stroke([Offset(4, 6)], Colors.black, 9, true),
         Stroke([Offset(10, 12), Offset(50, 80)], Colors.blue, 2, false,
             shape: StrokeShape.rectangle),
+        Stroke([Offset(6, 9), Offset(45, 60)], Colors.green, 3, false,
+            shape: StrokeShape.ellipse),
       ]),
       DrawingLayer('Oculta', [], visible: false),
       DrawingLayer('Foto', [], imageBytes: Uint8List.fromList([1, 2, 3])),
@@ -155,6 +176,7 @@ void main() {
         Colors.red.toARGB32());
     expect(restored.layers[0].strokes[1].erase, isTrue);
     expect(restored.layers[0].strokes[2].shape, StrokeShape.rectangle);
+    expect(restored.layers[0].strokes[3].shape, StrokeShape.ellipse);
     expect(restored.layers[1].visible, isFalse);
     expect(restored.layers[2].imageBytes, orderedEquals([1, 2, 3]));
     expect(restored.selected, 0);

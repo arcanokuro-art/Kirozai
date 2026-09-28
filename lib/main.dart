@@ -22,7 +22,7 @@ class Stroke {
   final StrokeShape shape;
 }
 
-enum StrokeShape { freehand, line, rectangle }
+enum StrokeShape { freehand, line, rectangle, ellipse }
 
 class DrawingLayer {
   const DrawingLayer(this.name, this.strokes,
@@ -136,7 +136,7 @@ class KirozaiApp extends StatelessWidget {
       );
 }
 
-enum CanvasTool { brush, eraser, line, rectangle, navigate }
+enum CanvasTool { brush, eraser, line, rectangle, ellipse, navigate }
 
 class Editor extends StatefulWidget {
   const Editor({super.key});
@@ -531,7 +531,8 @@ class _EditorState extends State<Editor> {
   void _extendStroke(PointerMoveEvent event) {
     if (event.pointer != _activePointer || _currentPoints.isEmpty) return;
     setState(() {
-      if (_tool == CanvasTool.line || _tool == CanvasTool.rectangle) {
+      if (_tool == CanvasTool.line || _tool == CanvasTool.rectangle ||
+          _tool == CanvasTool.ellipse) {
         if (_currentPoints.length == 2) _currentPoints.removeLast();
       }
       _currentPoints.add(event.localPosition);
@@ -549,12 +550,14 @@ class _EditorState extends State<Editor> {
     if (_currentPoints.isEmpty) return;
     final layer = _document.layers[_document.selected];
     final points = List<Offset>.of(_currentPoints);
-    if (_tool == CanvasTool.line || _tool == CanvasTool.rectangle) {
+    if (_tool == CanvasTool.line || _tool == CanvasTool.rectangle ||
+        _tool == CanvasTool.ellipse) {
       if (points.length == 1) points.add(event.localPosition);
       points[1] = event.localPosition;
     }
     final shape = _tool == CanvasTool.line ? StrokeShape.line
         : _tool == CanvasTool.rectangle ? StrokeShape.rectangle
+        : _tool == CanvasTool.ellipse ? StrokeShape.ellipse
         : StrokeShape.freehand;
     final stroke = Stroke(points, _color, _width,
         _tool == CanvasTool.eraser, shape: shape);
@@ -613,6 +616,7 @@ class _EditorState extends State<Editor> {
           _toolButton('Borrador', Icons.auto_fix_off, CanvasTool.eraser),
           _toolButton('Línea', Icons.show_chart, CanvasTool.line),
           _toolButton('Rectángulo', Icons.crop_square, CanvasTool.rectangle),
+          _toolButton('Elipse', Icons.circle_outlined, CanvasTool.ellipse),
           _toolButton('Mover / zoom', Icons.pan_tool_alt, CanvasTool.navigate),
         ]),
         const SizedBox(height: 18),
@@ -785,6 +789,7 @@ class _EditorState extends State<Editor> {
                       previewErase: _tool == CanvasTool.eraser,
                       previewShape: _tool == CanvasTool.line ? StrokeShape.line
                           : _tool == CanvasTool.rectangle ? StrokeShape.rectangle
+                          : _tool == CanvasTool.ellipse ? StrokeShape.ellipse
                           : StrokeShape.freehand,
                       selected: _document.selected),
                 ),
@@ -860,6 +865,10 @@ class CanvasArtwork extends CustomPainter {
       ..blendMode = stroke.erase ? BlendMode.clear : BlendMode.srcOver;
     if (stroke.shape == StrokeShape.rectangle && stroke.points.length > 1) {
       canvas.drawRect(Rect.fromPoints(stroke.points.first, stroke.points.last), paint);
+      return;
+    }
+    if (stroke.shape == StrokeShape.ellipse && stroke.points.length > 1) {
+      canvas.drawOval(Rect.fromPoints(stroke.points.first, stroke.points.last), paint);
       return;
     }
     if (stroke.shape == StrokeShape.line && stroke.points.length > 1) {
