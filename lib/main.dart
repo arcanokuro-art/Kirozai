@@ -368,11 +368,16 @@ class _EditorState extends State<Editor> {
       if (!mounted) return;
       setState(() {
         _document = document;
-        _dirty = false;
+        _dirty = external;
         _undo.clear();
         _redo.clear();
         _currentPoints.clear();
       });
+      if (external) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Proyecto importado. Guarda para conservarlo en la aplicación.'),
+        ));
+      }
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -759,13 +764,20 @@ class _EditorState extends State<Editor> {
   }
 
   Widget _toolButton(String title, IconData icon, CanvasTool tool) =>
-      ChoiceChip(label: Text(title), avatar: Icon(icon, size: 18),
+      Builder(builder: (chipContext) => ChoiceChip(
+        label: Text(title), avatar: Icon(icon, size: 18),
         selected: _tool == tool,
-        onSelected: (_) => setState(() {
-          _currentPoints.clear();
-          _activePointer = null;
-          _tool = tool;
-        }));
+        onSelected: (_) {
+          setState(() {
+            _currentPoints.clear();
+            _activePointer = null;
+            _tool = tool;
+          });
+          if (Scaffold.of(chipContext).isDrawerOpen) {
+            Navigator.of(chipContext).pop();
+          }
+        },
+      ));
 }
 
 class CanvasArtwork extends CustomPainter {

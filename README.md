@@ -10,7 +10,8 @@ Prototipo de un editor de dibujo para Android hecho con Flutter. Por ahora el de
 - Zoom con dos dedos mientras dibujas; el modo «Mover / zoom» permite desplazar el lienzo. Exportación PNG para compartir o guardar con el sistema.
 - Guardar y volver a abrir el proyecto editable en el almacenamiento privado de la aplicación (`kirozai-project.json`). Guardar sustituye el proyecto anterior; exportar PNG crea una imagen para compartir.
 - El guardado escribe primero un archivo temporal y después reemplaza el proyecto para evitar dejarlo incompleto si se interrumpe la escritura.
-- Compartir el proyecto editable como JSON e importarlo de nuevo mediante el selector de archivos de Android; pide confirmación si hay cambios sin guardar.
+- Compartir el proyecto editable como JSON e importarlo de nuevo mediante el selector de archivos de Android; pide confirmación si hay cambios sin guardar. Un proyecto importado queda marcado como pendiente hasta guardarlo en la aplicación.
+- En pantallas pequeñas, seleccionar una herramienta cierra el panel lateral para volver al lienzo.
 - El título muestra un punto cuando hay cambios pendientes; abrir el proyecto guardado solicita confirmación antes de descartar esos cambios.
 - Nuevo dibujo con confirmación antes de reemplazar el lienzo actual.
 - Importar imágenes PNG, JPEG o WebP como capa para dibujar encima; la imagen importada queda incluida en el proyecto editable.

@@ -7,6 +7,19 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kirozai/main.dart';
 
 void main() {
+  testWidgets('choosing a tool closes the drawer on a small screen',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(400, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(const KirozaiApp());
+    await tester.tap(find.byIcon(Icons.menu));
+    await tester.pumpAndSettle();
+    expect(tester.state<ScaffoldState>(find.byType(Scaffold)).isDrawerOpen, isTrue);
+    await tester.tap(find.text('Borrador'));
+    await tester.pumpAndSettle();
+    expect(tester.state<ScaffoldState>(find.byType(Scaffold)).isDrawerOpen, isFalse);
+  });
+
   testWidgets('file menu exposes editable project transfer', (tester) async {
     await tester.binding.setSurfaceSize(const Size(1200, 850));
     addTearDown(() => tester.binding.setSurfaceSize(null));
