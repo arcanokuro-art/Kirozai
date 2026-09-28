@@ -1,9 +1,31 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kirozai/main.dart';
 
 void main() {
+  test('saving replaces the prior project and leaves no temporary file', () async {
+    final directory = await Directory.systemTemp.createTemp('kirozai-test-');
+    addTearDown(() => directory.delete(recursive: true));
+    final file = File('${directory.path}/project.json');
+    await file.writeAsString('old project');
+    final document = DrawingDocument([
+      DrawingLayer('Nueva capa', [
+        Stroke([const Offset(1, 2)], Colors.blue, 4, false),
+      ]),
+    ], 0);
+    await writeProjectAtomically(file, document);
+    final restored = DrawingDocument.fromJson(
+        jsonDecode(await file.readAsString()) as Map<String, dynamic>);
+    expect(restored.layers.single.name, 'Nueva capa');
+    expect(restored.layers.single.strokes.single.points.single,
+        const Offset(1, 2));
+    expect(await File('${file.path}.tmp').exists(), isFalse);
+  });
+
   testWidgets('two fingers zoom while brush is selected without drawing',
       (tester) async {
     await tester.binding.setSurfaceSize(const Size(1200, 850));

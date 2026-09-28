@@ -108,6 +108,16 @@ class DrawingDocument {
   }
 }
 
+Future<void> writeProjectAtomically(File destination, DrawingDocument document) async {
+  final temporary = File('${destination.path}.tmp');
+  try {
+    await temporary.writeAsString(jsonEncode(document.toJson()), flush: true);
+    await temporary.rename(destination.path);
+  } finally {
+    if (await temporary.exists()) await temporary.delete();
+  }
+}
+
 class KirozaiApp extends StatelessWidget {
   const KirozaiApp({super.key});
 
@@ -261,7 +271,7 @@ class _EditorState extends State<Editor> {
     try {
       final snapshot = _document;
       final file = await _projectFile();
-      await file.writeAsString(jsonEncode(snapshot.toJson()), flush: true);
+      await writeProjectAtomically(file, snapshot);
       if (mounted && identical(_document, snapshot)) {
         setState(() => _dirty = false);
       }
@@ -371,7 +381,8 @@ class _EditorState extends State<Editor> {
     final original = layers[_document.selected];
     final index = _document.selected + 1;
     layers.insert(index, DrawingLayer('${original.name} copia',
-        List.of(original.strokes), visible: original.visible));
+        List.of(original.strokes), visible: original.visible,
+        imageBytes: original.imageBytes, image: original.image));
     _commit(DrawingDocument(layers, index));
   }
 
