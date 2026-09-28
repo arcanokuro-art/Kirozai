@@ -7,6 +7,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kirozai/main.dart';
 
 void main() {
+  testWidgets('stroke opacity can be changed', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 850));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(const KirozaiApp());
+    final slider = find.byKey(const Key('stroke-opacity'));
+    expect(tester.widget<Slider>(slider).value, 1);
+    await tester.drag(slider, const Offset(-100, 0));
+    await tester.pump();
+    expect(tester.widget<Slider>(slider).value, lessThan(1));
+  });
+
   testWidgets('ellipse tool draws an undoable shape', (tester) async {
     await tester.binding.setSurfaceSize(const Size(1200, 850));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -170,7 +181,8 @@ void main() {
   test('editable project preserves layers, points and eraser', () {
     final original = DrawingDocument([
       DrawingLayer('Base', [
-        Stroke([Offset(2, 3), Offset(5, 8)], Colors.red, 7, false),
+        Stroke([Offset(2, 3), Offset(5, 8)],
+            const Color.fromARGB(128, 255, 0, 0), 7, false),
         Stroke([Offset(4, 6)], Colors.black, 9, true),
         Stroke([Offset(10, 12), Offset(50, 80)], Colors.blue, 2, false,
             shape: StrokeShape.rectangle),
@@ -184,7 +196,7 @@ void main() {
     expect(restored.layers.length, 3);
     expect(restored.layers[0].strokes[0].points.last, const Offset(5, 8));
     expect(restored.layers[0].strokes[0].color.toARGB32(),
-        Colors.red.toARGB32());
+        const Color.fromARGB(128, 255, 0, 0).toARGB32());
     expect(restored.layers[0].strokes[1].erase, isTrue);
     expect(restored.layers[0].strokes[2].shape, StrokeShape.rectangle);
     expect(restored.layers[0].strokes[3].shape, StrokeShape.ellipse);

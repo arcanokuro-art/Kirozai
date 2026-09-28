@@ -158,6 +158,7 @@ class _EditorState extends State<Editor> {
   CanvasTool _tool = CanvasTool.brush;
   Color _color = const Color(0xff222634);
   double _width = 8;
+  double _opacity = 1;
   bool _fillShapes = false;
   bool _exporting = false;
   bool _saving = false;
@@ -563,7 +564,7 @@ class _EditorState extends State<Editor> {
         : _tool == CanvasTool.rectangle ? StrokeShape.rectangle
         : _tool == CanvasTool.ellipse ? StrokeShape.ellipse
         : StrokeShape.freehand;
-    final stroke = Stroke(points, _color, _width,
+    final stroke = Stroke(points, _color.withValues(alpha: _opacity), _width,
         _tool == CanvasTool.eraser, shape: shape,
         filled: _fillShapes &&
             (shape == StrokeShape.rectangle || shape == StrokeShape.ellipse));
@@ -651,6 +652,10 @@ class _EditorState extends State<Editor> {
         Text('Grosor: ${_width.round()} px'),
         Slider(value: _width, min: 1, max: 60,
           onChanged: (value) => setState(() => _width = value)),
+        Text('Opacidad: ${(_opacity * 100).round()} %'),
+        Slider(key: const Key('stroke-opacity'), value: _opacity,
+          min: 0.05, max: 1, divisions: 19,
+          onChanged: (value) => setState(() => _opacity = value)),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
           title: const Text('Rellenar figuras'),
@@ -797,7 +802,8 @@ class _EditorState extends State<Editor> {
                 width: canvasSize.width, height: canvasSize.height,
                 child: CustomPaint(
                   painter: CanvasArtwork(_document.layers, preview: _currentPoints,
-                      previewColor: _color, previewWidth: _width,
+                      previewColor: _color.withValues(alpha: _opacity),
+                      previewWidth: _width,
                       previewErase: _tool == CanvasTool.eraser,
                       previewShape: _tool == CanvasTool.line ? StrokeShape.line
                           : _tool == CanvasTool.rectangle ? StrokeShape.rectangle

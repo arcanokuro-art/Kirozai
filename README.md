@@ -4,7 +4,7 @@ Prototipo de un editor de dibujo para Android hecho con Flutter. Por ahora el de
 
 ## Funciones actuales
 
-- Lienzo de 1024 × 768 píxeles, pincel con color de paleta o color personalizado y grosor, borrador por capa, línea recta, rectángulo y elipse. Rectángulos y elipses pueden dibujarse con contorno o relleno.
+- Lienzo de 1024 × 768 píxeles, pincel con color de paleta o color personalizado, grosor y opacidad; borrador por capa, línea recta, rectángulo y elipse. Rectángulos y elipses pueden dibujarse con contorno o relleno.
 - Capas editables, visibilidad, agregar, duplicar, renombrar, reordenar y borrar capas.
 - Deshacer y rehacer trazos y cambios de capas.
 - Zoom con dos dedos mientras dibujas; el modo «Mover / zoom» permite desplazar el lienzo. Exportación PNG para compartir o guardar con el sistema.
