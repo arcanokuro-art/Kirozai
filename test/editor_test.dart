@@ -26,6 +26,17 @@ void main() {
     )).onPressed, isNull);
   });
 
+  testWidgets('shape fill can be toggled in the tools panel', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 850));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(const KirozaiApp());
+    final fill = find.widgetWithText(SwitchListTile, 'Rellenar figuras');
+    expect(tester.widget<SwitchListTile>(fill).value, isFalse);
+    await tester.tap(fill);
+    await tester.pump();
+    expect(tester.widget<SwitchListTile>(fill).value, isTrue);
+  });
+
   testWidgets('Android back asks before losing unsaved changes', (tester) async {
     await tester.binding.setSurfaceSize(const Size(1200, 850));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -164,7 +175,7 @@ void main() {
         Stroke([Offset(10, 12), Offset(50, 80)], Colors.blue, 2, false,
             shape: StrokeShape.rectangle),
         Stroke([Offset(6, 9), Offset(45, 60)], Colors.green, 3, false,
-            shape: StrokeShape.ellipse),
+            shape: StrokeShape.ellipse, filled: true),
       ]),
       DrawingLayer('Oculta', [], visible: false),
       DrawingLayer('Foto', [], imageBytes: Uint8List.fromList([1, 2, 3])),
@@ -177,6 +188,8 @@ void main() {
     expect(restored.layers[0].strokes[1].erase, isTrue);
     expect(restored.layers[0].strokes[2].shape, StrokeShape.rectangle);
     expect(restored.layers[0].strokes[3].shape, StrokeShape.ellipse);
+    expect(restored.layers[0].strokes[3].filled, isTrue);
+    expect(restored.layers[0].strokes[2].filled, isFalse);
     expect(restored.layers[1].visible, isFalse);
     expect(restored.layers[2].imageBytes, orderedEquals([1, 2, 3]));
     expect(restored.selected, 0);

@@ -14,12 +14,13 @@ const canvasSize = Size(1024, 768);
 
 class Stroke {
   const Stroke(this.points, this.color, this.width, this.erase,
-      {this.shape = StrokeShape.freehand});
+      {this.shape = StrokeShape.freehand, this.filled = false});
   final List<Offset> points;
   final Color color;
   final double width;
   final bool erase;
   final StrokeShape shape;
+  final bool filled;
 }
 
 enum StrokeShape { freehand, line, rectangle, ellipse }
@@ -66,6 +67,7 @@ class DrawingDocument {
                     'width': stroke.width,
                     'erase': stroke.erase,
                     'shape': stroke.shape.name,
+                    if (stroke.filled) 'filled': true,
                   },
               ],
             },
@@ -93,7 +95,8 @@ class DrawingDocument {
           orElse: () => throw const FormatException('Forma inválida'),
         );
         return Stroke(points, Color(stroke['color'] as int), width,
-            stroke['erase'] as bool, shape: shape);
+            stroke['erase'] as bool, shape: shape,
+            filled: stroke['filled'] == true);
       }).toList();
       return DrawingLayer(layer['name'] as String, strokes,
           visible: layer['visible'] as bool,
@@ -155,6 +158,7 @@ class _EditorState extends State<Editor> {
   CanvasTool _tool = CanvasTool.brush;
   Color _color = const Color(0xff222634);
   double _width = 8;
+  bool _fillShapes = false;
   bool _exporting = false;
   bool _saving = false;
   bool _sharingProject = false;
@@ -560,7 +564,9 @@ class _EditorState extends State<Editor> {
         : _tool == CanvasTool.ellipse ? StrokeShape.ellipse
         : StrokeShape.freehand;
     final stroke = Stroke(points, _color, _width,
-        _tool == CanvasTool.eraser, shape: shape);
+        _tool == CanvasTool.eraser, shape: shape,
+        filled: _fillShapes &&
+            (shape == StrokeShape.rectangle || shape == StrokeShape.ellipse));
     _currentPoints.clear();
     _replaceLayer(_document.selected,
         layer.copyWith(strokes: [...layer.strokes, stroke]));
@@ -645,6 +651,12 @@ class _EditorState extends State<Editor> {
         Text('Grosor: ${_width.round()} px'),
         Slider(value: _width, min: 1, max: 60,
           onChanged: (value) => setState(() => _width = value)),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Rellenar figuras'),
+          value: _fillShapes,
+          onChanged: (value) => setState(() => _fillShapes = value),
+        ),
         const Divider(height: 28),
         Row(children: [
           const Expanded(child: Text('CAPAS', style: TextStyle(fontWeight: FontWeight.bold))),
@@ -791,6 +803,7 @@ class _EditorState extends State<Editor> {
                           : _tool == CanvasTool.rectangle ? StrokeShape.rectangle
                           : _tool == CanvasTool.ellipse ? StrokeShape.ellipse
                           : StrokeShape.freehand,
+                      previewFilled: _fillShapes,
                       selected: _document.selected),
                 ),
               ),
@@ -823,7 +836,8 @@ class _EditorState extends State<Editor> {
 class CanvasArtwork extends CustomPainter {
   CanvasArtwork(this.layers, {this.preview = const [], this.previewColor = Colors.black,
     this.previewWidth = 1, this.previewErase = false,
-    this.previewShape = StrokeShape.freehand, this.selected = -1});
+    this.previewShape = StrokeShape.freehand, this.previewFilled = false,
+    this.selected = -1});
 
   final List<DrawingLayer> layers;
   final List<Offset> preview;
@@ -831,6 +845,7 @@ class CanvasArtwork extends CustomPainter {
   final double previewWidth;
   final bool previewErase;
   final StrokeShape previewShape;
+  final bool previewFilled;
   final int selected;
 
   @override
@@ -848,7 +863,9 @@ class CanvasArtwork extends CustomPainter {
       }
       if (i == selected && preview.isNotEmpty) {
         _paintStroke(canvas, Stroke(preview, previewColor, previewWidth,
-            previewErase, shape: previewShape));
+            previewErase, shape: previewShape,
+            filled: previewFilled && (previewShape == StrokeShape.rectangle ||
+                previewShape == StrokeShape.ellipse)));
       }
       canvas.restore();
     }
@@ -861,7 +878,7 @@ class CanvasArtwork extends CustomPainter {
       ..strokeWidth = stroke.width
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
-      ..style = PaintingStyle.stroke
+      ..style = stroke.filled ? PaintingStyle.fill : PaintingStyle.stroke
       ..blendMode = stroke.erase ? BlendMode.clear : BlendMode.srcOver;
     if (stroke.shape == StrokeShape.rectangle && stroke.points.length > 1) {
       canvas.drawRect(Rect.fromPoints(stroke.points.first, stroke.points.last), paint);
