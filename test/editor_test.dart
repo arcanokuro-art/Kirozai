@@ -23,7 +23,9 @@ void main() {
     await first.up();
     await second.up();
     await tester.pump();
-    expect(tester.widget<IconButton>(find.byTooltip('Deshacer')).onPressed, isNull);
+    expect(tester.widget<IconButton>(find.ancestor(
+      of: find.byTooltip('Deshacer'), matching: find.byType(IconButton),
+    )).onPressed, isNull);
   });
 
   testWidgets('editor opens and supports layer creation and undo', (tester) async {
