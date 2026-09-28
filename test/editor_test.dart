@@ -7,6 +7,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kirozai/main.dart';
 
 void main() {
+  testWidgets('file menu exposes editable project transfer', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 850));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(const KirozaiApp());
+    await tester.tap(find.byTooltip('Archivo'));
+    await tester.pumpAndSettle();
+    expect(find.text('Importar proyecto editable'), findsOneWidget);
+    expect(find.text('Compartir proyecto editable'), findsOneWidget);
+  });
+
   test('saving replaces the prior project and leaves no temporary file', () async {
     final directory = await Directory.systemTemp.createTemp('kirozai-test-');
     addTearDown(() => directory.delete(recursive: true));

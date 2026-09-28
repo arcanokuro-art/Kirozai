@@ -157,6 +157,7 @@ class _EditorState extends State<Editor> {
   double _width = 8;
   bool _exporting = false;
   bool _saving = false;
+  bool _sharingProject = false;
   bool _dirty = false;
   int? _activePointer;
   final Set<int> _pointersOnCanvas = {};
@@ -291,12 +292,52 @@ class _EditorState extends State<Editor> {
     }
   }
 
-  Future<void> _openProject() async {
+  Future<void> _shareProject() async {
+    if (_sharingProject) return;
+    setState(() => _sharingProject = true);
+    try {
+      final directory = await getTemporaryDirectory();
+      final file = File('${directory.path}/kirozai-${DateTime.now().microsecondsSinceEpoch}.json');
+      await writeProjectAtomically(file, _document);
+      if (!mounted) return;
+      await SharePlus.instance.share(ShareParams(
+        files: [XFile(file.path, mimeType: 'application/json')],
+      ));
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No se pudo compartir el proyecto: $error')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _sharingProject = false);
+    }
+  }
+
+  Future<void> _openProject({bool external = false}) async {
+    XFile? selectedFile;
+    if (external) {
+      try {
+        selectedFile = await openFile(acceptedTypeGroups: [
+          const XTypeGroup(label: 'Proyecto Kirozai',
+              extensions: ['json'], mimeTypes: ['application/json']),
+        ]);
+        if (selectedFile == null || !mounted) return;
+        if (await selectedFile.length() > 50 * 1024 * 1024) {
+          throw const FormatException('El proyecto supera 50 MB');
+        }
+      } catch (error) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No se pudo seleccionar el proyecto: $error')),
+        );
+        return;
+      }
+    }
     if (_dirty) {
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Abrir proyecto guardado'),
+          title: Text(external ? 'Importar proyecto' : 'Abrir proyecto guardado'),
           content: const Text('El dibujo actual tiene cambios sin guardar. ¿Descartarlos?'),
           actions: [
             TextButton(onPressed: () => Navigator.pop(context, false),
@@ -309,8 +350,10 @@ class _EditorState extends State<Editor> {
       if (!mounted || confirmed != true) return;
     }
     try {
-      final file = await _projectFile();
-      final decoded = jsonDecode(await file.readAsString()) as Map<String, dynamic>;
+      final contents = selectedFile == null
+          ? await (await _projectFile()).readAsString()
+          : await selectedFile.readAsString();
+      final decoded = jsonDecode(contents) as Map<String, dynamic>;
       final stored = DrawingDocument.fromJson(decoded);
       final layers = <DrawingLayer>[];
       for (final layer in stored.layers) {
@@ -659,14 +702,19 @@ class _EditorState extends State<Editor> {
             if (action == 'new') _newProject();
             if (action == 'import') _importImage();
             if (action == 'open') _openProject();
+            if (action == 'openExternal') _openProject(external: true);
             if (action == 'save') _saveProject();
+            if (action == 'shareProject') _shareProject();
           },
           itemBuilder: (context) => [
             const PopupMenuItem(value: 'new', child: Text('Nuevo dibujo')),
             const PopupMenuItem(value: 'import', child: Text('Importar imagen')),
             const PopupMenuItem(value: 'open', child: Text('Abrir proyecto guardado')),
+            const PopupMenuItem(value: 'openExternal', child: Text('Importar proyecto editable')),
             PopupMenuItem(value: 'save', enabled: !_saving,
                 child: const Text('Guardar proyecto')),
+            PopupMenuItem(value: 'shareProject', enabled: !_sharingProject,
+                child: const Text('Compartir proyecto editable')),
           ],
         ),
       ]),
