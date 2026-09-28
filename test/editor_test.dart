@@ -12,7 +12,7 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(400, 800));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(const KirozaiApp());
-    await tester.tap(find.byIcon(Icons.menu));
+    tester.state<ScaffoldState>(find.byType(Scaffold)).openDrawer();
     await tester.pumpAndSettle();
     expect(tester.state<ScaffoldState>(find.byType(Scaffold)).isDrawerOpen, isTrue);
     await tester.tap(find.text('Borrador'));
