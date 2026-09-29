@@ -14,6 +14,23 @@ Future<void> tapVisible(WidgetTester tester, String tooltip) async {
 }
 
 void main() {
+  testWidgets('layer opacity changes can be undone', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 850));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(const KirozaiApp());
+    final control = find.text('Opacidad capa: 100 %');
+    await tester.ensureVisible(control);
+    await tester.pumpAndSettle();
+    await tester.tap(control);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('50 %'));
+    await tester.pumpAndSettle();
+    expect(find.text('Opacidad capa: 50 %'), findsOneWidget);
+    await tester.tap(find.byTooltip('Deshacer'));
+    await tester.pump();
+    expect(find.text('Opacidad capa: 100 %'), findsOneWidget);
+  });
+
   testWidgets('eyedropper reads the visible canvas color', (tester) async {
     final layers = [
       DrawingLayer('Rojo', [
@@ -30,6 +47,9 @@ void main() {
           Colors.red.toARGB32());
       expect((await sampleArtworkColor(layers, const Offset(80, 80)))?.toARGB32(),
           Colors.white.toARGB32());
+      final translucent = await sampleArtworkColor(
+          [layers.first.copyWith(opacity: 0.5)], const Offset(30, 30));
+      expect(translucent!.g, closeTo(0.5, 0.02));
       expect(await sampleArtworkColor(layers, const Offset(-1, 0)), isNull);
     });
   });
@@ -217,7 +237,8 @@ void main() {
             shape: StrokeShape.ellipse, filled: true),
       ]),
       DrawingLayer('Oculta', [], visible: false),
-      DrawingLayer('Foto', [], imageBytes: Uint8List.fromList([1, 2, 3])),
+      DrawingLayer('Foto', [], opacity: 0.5,
+          imageBytes: Uint8List.fromList([1, 2, 3])),
     ], 0);
     final restored = DrawingDocument.fromJson(original.toJson());
     expect(restored.layers.length, 3);
@@ -231,9 +252,14 @@ void main() {
     expect(restored.layers[0].strokes[2].filled, isFalse);
     expect(restored.layers[1].visible, isFalse);
     expect(restored.layers[2].imageBytes, orderedEquals([1, 2, 3]));
+    expect(restored.layers[2].opacity, 0.5);
+    expect(restored.layers[0].opacity, 1);
     expect(restored.selected, 0);
     expect(() => DrawingDocument.fromJson({'version': 1, 'selected': 0,
       'layers': []}), throwsFormatException);
+    expect(() => DrawingDocument.fromJson({'version': 1, 'selected': 0,
+      'layers': [{'name': 'Mal', 'visible': true, 'opacity': 2,
+        'strokes': []}]}), throwsFormatException);
   });
 
   testWidgets('new drawing requires confirmation and resets layers', (tester) async {

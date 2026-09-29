@@ -27,17 +27,19 @@ enum StrokeShape { freehand, line, rectangle, ellipse }
 
 class DrawingLayer {
   const DrawingLayer(this.name, this.strokes,
-      {this.visible = true, this.imageBytes, this.image});
+      {this.visible = true, this.opacity = 1, this.imageBytes, this.image});
   final String name;
   final List<Stroke> strokes;
   final bool visible;
+  final double opacity;
   final Uint8List? imageBytes;
   final ui.Image? image;
 
   DrawingLayer copyWith({String? name, List<Stroke>? strokes, bool? visible,
+      double? opacity,
       Uint8List? imageBytes, ui.Image? image}) =>
       DrawingLayer(name ?? this.name, strokes ?? this.strokes,
-          visible: visible ?? this.visible,
+          visible: visible ?? this.visible, opacity: opacity ?? this.opacity,
           imageBytes: imageBytes ?? this.imageBytes,
           image: image ?? this.image);
 }
@@ -55,6 +57,7 @@ class DrawingDocument {
             {
               'name': layer.name,
               'visible': layer.visible,
+              if (layer.opacity != 1) 'opacity': layer.opacity,
               if (layer.imageBytes != null)
                 'imageData': base64Encode(layer.imageBytes!),
               'strokes': [
@@ -78,6 +81,10 @@ class DrawingDocument {
     if (json['version'] != 1) throw const FormatException('Versión no compatible');
     final layers = (json['layers'] as List).map((entry) {
       final layer = entry as Map<String, dynamic>;
+      final opacity = (layer['opacity'] as num?)?.toDouble() ?? 1;
+      if (!opacity.isFinite || opacity < 0 || opacity > 1) {
+        throw const FormatException('Opacidad de capa inválida');
+      }
       final strokes = (layer['strokes'] as List).map((entry) {
         final stroke = entry as Map<String, dynamic>;
         final points = (stroke['points'] as List).map((entry) {
@@ -99,7 +106,7 @@ class DrawingDocument {
             filled: stroke['filled'] == true);
       }).toList();
       return DrawingLayer(layer['name'] as String, strokes,
-          visible: layer['visible'] as bool,
+          visible: layer['visible'] as bool, opacity: opacity,
           imageBytes: layer['imageData'] == null
               ? null : base64Decode(layer['imageData'] as String));
     }).toList();
@@ -468,6 +475,7 @@ class _EditorState extends State<Editor> {
     final index = _document.selected + 1;
     layers.insert(index, DrawingLayer('${original.name} copia',
         List.of(original.strokes), visible: original.visible,
+        opacity: original.opacity,
         imageBytes: original.imageBytes, image: original.image));
     _commit(DrawingDocument(layers, index));
   }
@@ -698,6 +706,25 @@ class _EditorState extends State<Editor> {
             ], _document.layers.length));
           }),
         ]),
+        PopupMenuButton<double>(
+          tooltip: 'Opacidad de capa',
+          onSelected: (value) {
+            final index = _document.selected;
+            _replaceLayer(index, _document.layers[index].copyWith(opacity: value));
+          },
+          itemBuilder: (context) => [
+            for (final value in [1.0, 0.75, 0.5, 0.25])
+              PopupMenuItem(value: value,
+                  child: Text('${(value * 100).round()} %')),
+          ],
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(children: [
+              Text('Opacidad capa: ${(_document.layers[_document.selected].opacity * 100).round()} %'),
+              const Icon(Icons.arrow_drop_down),
+            ]),
+          ),
+        ),
         for (var i = _document.layers.length - 1; i >= 0; i--)
           ListTile(
             dense: true,
@@ -882,7 +909,8 @@ class CanvasArtwork extends CustomPainter {
     canvas.drawRect(Offset.zero & size, Paint()..color = Colors.white);
     for (var i = 0; i < layers.length; i++) {
       if (!layers[i].visible) continue;
-      canvas.saveLayer(Offset.zero & size, Paint());
+      canvas.saveLayer(Offset.zero & size,
+          Paint()..color = Colors.white.withValues(alpha: layers[i].opacity));
       if (layers[i].image != null) {
         paintImage(canvas: canvas, rect: Offset.zero & size,
             image: layers[i].image!, fit: BoxFit.contain);
