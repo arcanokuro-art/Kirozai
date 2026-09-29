@@ -20,8 +20,10 @@ Prototipo de un editor de dibujo para Android hecho con Flutter. Por ahora el de
 
 ## Ejecutar
 
-Instala Flutter y usa `flutter create --platforms=android .` una vez para generar el proyecto Android. Luego ejecuta `flutter pub get`, `flutter run`, `flutter analyze` y `flutter test`.
+Instala Flutter y usa `flutter create --org com.arcanokuro --platforms=android .` una vez para generar el proyecto Android. Ejecuta `bash packaging/configure-android.sh`, `flutter pub get`, `flutter analyze`, `flutter test` y `flutter build apk --release`. El identificador Android es `com.arcanokuro.kirozai`.
 
-GitHub Actions comprueba el código y genera un APK Android de prueba (`app-release.apk`) como artefacto de la ejecución. El APK de modo release utiliza la clave de depuración del proyecto Flutter generado; es para pruebas y no para publicar en una tienda.
+GitHub Actions comprueba el código y genera un APK Android de prueba (`app-release.apk`) como artefacto de la ejecución. Usa una firma de desarrollo fija y aumenta el número de compilación en cada ejecución para que las próximas versiones de prueba puedan actualizarse entre sí. La clave de desarrollo está en el repositorio y **no sirve para publicar**: antes de distribuir Kirozai en una tienda se requiere una clave privada de publicación protegida.
+
+El identificador y la firma de esta versión difieren de los APK anteriores. Se instala como una aplicación nueva. Antes de pasar tus dibujos, comparte el proyecto editable desde el APK anterior y luego impórtalo en esta versión.
 
 Los proyectos de plataforma se generan a partir de esta base. La exportación funciona con la interfaz de compartir del sistema. Las imágenes importadas se ajustan al lienzo de 1024 × 768 sin deformarse; todavía no hay controles para transformarlas, recortarlas o editar sus píxeles originales.
