@@ -13,12 +13,19 @@ jobs:
           channel: stable
           cache: true
       - run: flutter create --org com.arcanokuro --platforms=android .
-      - run: bash packaging/configure-android.sh
       - run: rm -f test/widget_test.dart
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
-      - run: flutter build apk --release --build-number "$GITHUB_RUN_NUMBER"
+      - run: bash packaging/configure-android.sh
+      - run: flutter build apk --release --no-pub --build-number "$GITHUB_RUN_NUMBER"
+      - name: Verificar identidad y firma del APK
+        run: |
+          apk=build/app/outputs/flutter-apk/app-release.apk
+          aapt=$(find "$ANDROID_HOME/build-tools" -name aapt -type f | sort -V | tail -1)
+          apksigner=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)
+          "$aapt" dump badging "$apk" | grep "package: name='com.arcanokuro.kirozai'.*versionCode='$GITHUB_RUN_NUMBER'"
+          "$apksigner" verify --print-certs "$apk" | grep -i '6ba049d1ac97b8ac7aee6456c739d7db0d0df01c314d9b9d1f53a5b671bc76bc'
       - uses: actions/upload-artifact@v4
         with:
           name: kirozai-android-apk
