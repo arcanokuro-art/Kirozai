@@ -941,7 +941,9 @@ Future<Color?> sampleArtworkColor(List<DrawingLayer> layers, Offset position) as
   final width = canvasSize.width.toInt();
   final height = canvasSize.height.toInt();
   if (position.dx < 0 || position.dy < 0 ||
-      position.dx >= width || position.dy >= height) return null;
+      position.dx >= width || position.dy >= height) {
+    return null;
+  }
   final recorder = ui.PictureRecorder();
   final canvas = Canvas(recorder);
   CanvasArtwork(layers).paint(canvas, canvasSize);
