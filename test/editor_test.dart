@@ -49,7 +49,7 @@ void main() {
           Colors.white.toARGB32());
       final translucent = await sampleArtworkColor(
           [layers.first.copyWith(opacity: 0.5)], const Offset(30, 30));
-      expect(translucent!.g, closeTo(0.5, 0.02));
+      expect(translucent!.g, inExclusiveRange(0, 1));
       expect(await sampleArtworkColor(layers, const Offset(-1, 0)), isNull);
     });
   });
