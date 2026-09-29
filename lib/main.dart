@@ -155,6 +155,102 @@ class KirozaiApp extends StatelessWidget {
       );
 }
 
+Color? parseHexColor(String value) {
+  final hex = value.trim().replaceFirst(RegExp(r'^#'), '');
+  if (!RegExp(r'^[0-9a-fA-F]{6}$').hasMatch(hex)) return null;
+  return Color(0xff000000 | int.parse(hex, radix: 16));
+}
+
+String colorHex(Color color) =>
+    '#${(color.toARGB32() & 0xffffff).toRadixString(16).padLeft(6, '0').toUpperCase()}';
+
+class ColorPickerDialog extends StatefulWidget {
+  const ColorPickerDialog({super.key, required this.initialColor});
+  final Color initialColor;
+
+  @override
+  State<ColorPickerDialog> createState() => _ColorPickerDialogState();
+}
+
+class _ColorPickerDialogState extends State<ColorPickerDialog> {
+  late HSVColor _hsv;
+  late final TextEditingController _hex;
+  bool _valid = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _hsv = HSVColor.fromColor(widget.initialColor.withValues(alpha: 1));
+    _hex = TextEditingController(text: colorHex(_hsv.toColor()));
+  }
+
+  void _updateSliders(HSVColor color) {
+    setState(() {
+      _hsv = color;
+      _valid = true;
+      _hex.text = colorHex(color.toColor());
+    });
+  }
+
+  @override
+  void dispose() {
+    _hex.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Elegir color'),
+    content: SizedBox(
+      width: 320,
+      child: SingleChildScrollView(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Container(key: const Key('color-preview'), height: 40,
+              decoration: BoxDecoration(color: _hsv.toColor(),
+                  borderRadius: BorderRadius.circular(8))),
+          const SizedBox(height: 12),
+          TextField(
+            key: const Key('hex-color'),
+            controller: _hex,
+            autocorrect: false,
+            enableSuggestions: false,
+            textCapitalization: TextCapitalization.characters,
+            maxLength: 7,
+            decoration: InputDecoration(
+              labelText: 'Código de color', hintText: '#59A7ED',
+              errorText: _valid ? null : 'Usa seis caracteres: 0–9 o A–F',
+            ),
+            onChanged: (value) {
+              final color = parseHexColor(value);
+              setState(() {
+                _valid = color != null;
+                if (color != null) _hsv = HSVColor.fromColor(color);
+              });
+            },
+          ),
+          const Text('Tono'),
+          Slider(key: const Key('color-hue'), value: _hsv.hue,
+              min: 0, max: 360,
+              onChanged: (value) => _updateSliders(_hsv.withHue(value))),
+          const Text('Saturación'),
+          Slider(value: _hsv.saturation,
+              onChanged: (value) => _updateSliders(_hsv.withSaturation(value))),
+          const Text('Brillo'),
+          Slider(value: _hsv.value,
+              onChanged: (value) => _updateSliders(_hsv.withValue(value))),
+        ]),
+      ),
+    ),
+    actions: [
+      TextButton(onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar')),
+      FilledButton(onPressed: _valid
+          ? () => Navigator.pop(context, parseHexColor(_hex.text)) : null,
+          child: const Text('Aplicar')),
+    ],
+  );
+}
+
 enum CanvasTool { brush, eraser, line, rectangle, ellipse, eyedropper, navigate }
 
 class Editor extends StatefulWidget {
@@ -211,36 +307,9 @@ class _EditorState extends State<Editor> {
   }
 
   Future<void> _chooseColor() async {
-    var hsv = HSVColor.fromColor(_color);
     final chosen = await showDialog<Color>(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, update) => AlertDialog(
-          title: const Text('Elegir color'),
-          content: SizedBox(
-            width: 320,
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Container(height: 40, decoration: BoxDecoration(
-                color: hsv.toColor(), borderRadius: BorderRadius.circular(8))),
-              const Text('Tono'),
-              Slider(value: hsv.hue, min: 0, max: 360,
-                  onChanged: (value) => update(() => hsv = hsv.withHue(value))),
-              const Text('Saturación'),
-              Slider(value: hsv.saturation,
-                  onChanged: (value) => update(() => hsv = hsv.withSaturation(value))),
-              const Text('Brillo'),
-              Slider(value: hsv.value,
-                  onChanged: (value) => update(() => hsv = hsv.withValue(value))),
-            ]),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context),
-                child: const Text('Cancelar')),
-            TextButton(onPressed: () => Navigator.pop(context, hsv.toColor()),
-                child: const Text('Aplicar')),
-          ],
-        ),
-      ),
+      builder: (context) => ColorPickerDialog(initialColor: _color),
     );
     if (mounted && chosen != null) setState(() => _color = chosen);
   }

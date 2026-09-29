@@ -14,6 +14,33 @@ Future<void> tapVisible(WidgetTester tester, String tooltip) async {
 }
 
 void main() {
+  test('hex colors accept exact RGB and reject invalid input', () {
+    expect(parseHexColor('#59a7ed'), const Color(0xff59a7ed));
+    expect(parseHexColor('  FF0000  '), const Color(0xffff0000));
+    expect(parseHexColor('#12345'), isNull);
+    expect(parseHexColor('#GG0000'), isNull);
+    expect(parseHexColor('#FF000080'), isNull);
+    expect(colorHex(const Color(0xff0012ab)), '#0012AB');
+  });
+
+  testWidgets('color picker validates hex and synchronizes sliders', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: ColorPickerDialog(
+      initialColor: Colors.red,
+    )));
+    final input = find.byKey(const Key('hex-color'));
+    await tester.enterText(input, '#59A7ED');
+    await tester.pump();
+    final preview = tester.widget<Container>(find.byKey(const Key('color-preview')));
+    expect((preview.decoration! as BoxDecoration).color, const Color(0xff59a7ed));
+    await tester.enterText(input, '#XY1234');
+    await tester.pump();
+    expect(tester.widget<FilledButton>(find.byType(FilledButton)).onPressed, isNull);
+    await tester.drag(find.byKey(const Key('color-hue')), const Offset(30, 0));
+    await tester.pump();
+    expect(tester.widget<FilledButton>(find.byType(FilledButton)).onPressed, isNotNull);
+    expect(parseHexColor(tester.widget<TextField>(input).controller!.text), isNotNull);
+  });
+
   testWidgets('clearing a layer asks first and can be undone', (tester) async {
     await tester.binding.setSurfaceSize(const Size(1200, 850));
     addTearDown(() => tester.binding.setSurfaceSize(null));
