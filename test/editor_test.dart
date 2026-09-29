@@ -14,6 +14,63 @@ Future<void> tapVisible(WidgetTester tester, String tooltip) async {
 }
 
 void main() {
+  testWidgets('clearing a layer asks first and can be undone', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 850));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(const KirozaiApp());
+    final center = tester.getCenter(find.byType(InteractiveViewer));
+    await tester.dragFrom(center, const Offset(30, 20));
+    await tester.pump();
+    await tapVisible(tester, 'Vaciar Capa 1');
+    await tester.pumpAndSettle();
+    expect(find.text('Se quitarán los trazos y la imagen de «Capa 1». Puedes deshacer este cambio.'), findsOneWidget);
+    await tester.tap(find.text('Cancelar'));
+    await tester.pumpAndSettle();
+    expect(tester.widget<IconButton>(find.ancestor(
+      of: find.byTooltip('Vaciar Capa 1'), matching: find.byType(IconButton),
+    )).onPressed,
+        isNotNull);
+    await tester.tap(find.byTooltip('Vaciar Capa 1'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Vaciar'));
+    await tester.pumpAndSettle();
+    expect(tester.widget<IconButton>(find.ancestor(
+      of: find.byTooltip('Vaciar Capa 1'), matching: find.byType(IconButton),
+    )).onPressed,
+        isNull);
+    await tester.tap(find.byTooltip('Deshacer'));
+    await tester.pump();
+    expect(tester.widget<IconButton>(find.ancestor(
+      of: find.byTooltip('Vaciar Capa 1'), matching: find.byType(IconButton),
+    )).onPressed,
+        isNotNull);
+  });
+
+  testWidgets('deleting a layer requires confirmation', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 850));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(const KirozaiApp());
+    await tapVisible(tester, 'Agregar capa');
+    await tester.pump();
+    await tester.ensureVisible(find.byTooltip('Eliminar capa').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Eliminar capa').first);
+    await tester.pumpAndSettle();
+    expect(find.text('¿Eliminar «Capa 2»? Puedes deshacer este cambio.'),
+        findsOneWidget);
+    await tester.tap(find.text('Cancelar'));
+    await tester.pumpAndSettle();
+    expect(find.text('Capa 2'), findsOneWidget);
+    await tester.tap(find.byTooltip('Eliminar capa').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Eliminar'));
+    await tester.pumpAndSettle();
+    expect(find.text('Capa 2'), findsNothing);
+    await tester.tap(find.byTooltip('Deshacer'));
+    await tester.pump();
+    expect(find.text('Capa 2'), findsOneWidget);
+  });
+
   testWidgets('locked layer prevents painting and can be unlocked', (tester) async {
     await tester.binding.setSurfaceSize(const Size(1200, 850));
     addTearDown(() => tester.binding.setSurfaceSize(null));

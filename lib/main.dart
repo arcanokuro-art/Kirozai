@@ -530,6 +530,56 @@ class _EditorState extends State<Editor> {
     _replaceLayer(index, _document.layers[index].copyWith(name: name.trim()));
   }
 
+  Future<void> _clearLayer(int index) async {
+    final layer = _document.layers[index];
+    if (layer.locked || (layer.strokes.isEmpty && layer.imageBytes == null)) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Vaciar capa'),
+        content: Text('Se quitarán los trazos y la imagen de «${layer.name}». Puedes deshacer este cambio.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancelar')),
+          FilledButton(onPressed: () => Navigator.pop(context, true),
+              child: const Text('Vaciar')),
+        ],
+      ),
+    );
+    if (!mounted || confirmed != true) return;
+    final currentIndex = _document.layers.indexOf(layer);
+    if (currentIndex < 0 || layer.locked) return;
+    _replaceLayer(currentIndex, DrawingLayer(layer.name, const [],
+        visible: layer.visible, opacity: layer.opacity));
+  }
+
+  Future<void> _deleteLayer(int index) async {
+    if (_document.layers.length <= 1) return;
+    final layer = _document.layers[index];
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Eliminar capa'),
+        content: Text('¿Eliminar «${layer.name}»? Puedes deshacer este cambio.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancelar')),
+          FilledButton(onPressed: () => Navigator.pop(context, true),
+              child: const Text('Eliminar')),
+        ],
+      ),
+    );
+    if (!mounted || confirmed != true || _document.layers.length <= 1) return;
+    final currentIndex = _document.layers.indexOf(layer);
+    if (currentIndex < 0) return;
+    final layers = [..._document.layers]..removeAt(currentIndex);
+    final selected = _document.selected == currentIndex
+        ? (currentIndex == layers.length ? currentIndex - 1 : currentIndex)
+        : _document.selected > currentIndex
+            ? _document.selected - 1 : _document.selected;
+    _commit(DrawingDocument(layers, selected));
+  }
+
   void _startStroke(PointerDownEvent event) {
     _pointersOnCanvas.add(event.pointer);
     if (_pointersOnCanvas.length > 1) {
@@ -752,6 +802,16 @@ class _EditorState extends State<Editor> {
             title: Text(_document.layers[i].name),
             subtitle: Wrap(spacing: 0, runSpacing: 0, children: [
               IconButton(
+                tooltip: 'Vaciar ${_document.layers[i].name}',
+                icon: const Icon(Icons.layers_clear_outlined, size: 18),
+                constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+                padding: EdgeInsets.zero,
+                onPressed: _document.layers[i].locked ||
+                        (_document.layers[i].strokes.isEmpty &&
+                            _document.layers[i].imageBytes == null)
+                    ? null : () => _clearLayer(i),
+              ),
+              IconButton(
                 tooltip: _document.layers[i].locked
                     ? 'Desbloquear ${_document.layers[i].name}'
                     : 'Bloquear ${_document.layers[i].name}',
@@ -794,13 +854,7 @@ class _EditorState extends State<Editor> {
             ),
             trailing: IconButton(
               tooltip: 'Eliminar capa', icon: const Icon(Icons.delete_outline),
-              onPressed: _document.layers.length == 1 ? null : () {
-                final layers = [..._document.layers]..removeAt(i);
-                final selected = _document.selected == i
-                    ? (i == layers.length ? i - 1 : i)
-                    : _document.selected > i ? _document.selected - 1 : _document.selected;
-                _commit(DrawingDocument(layers, selected));
-              },
+              onPressed: _document.layers.length == 1 ? null : () => _deleteLayer(i),
             ),
             onTap: () => setState(() => _document =
                 DrawingDocument(_document.layers, i)),
