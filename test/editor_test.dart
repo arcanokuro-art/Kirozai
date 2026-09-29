@@ -14,6 +14,46 @@ Future<void> tapVisible(WidgetTester tester, String tooltip) async {
 }
 
 void main() {
+  testWidgets('locked layer prevents painting and can be unlocked', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 850));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(const KirozaiApp());
+    await tapVisible(tester, 'Bloquear Capa 1');
+    await tester.pump();
+    final viewer = find.byType(InteractiveViewer);
+    final center = tester.getCenter(viewer);
+    await tester.dragFrom(center, const Offset(25, 15));
+    await tester.pump();
+    await tester.tap(find.byTooltip('Deshacer'));
+    await tester.pump();
+    expect(find.byTooltip('Bloquear Capa 1'), findsOneWidget);
+    await tester.dragFrom(center, const Offset(25, 15));
+    await tester.pump();
+    final undo = tester.widget<IconButton>(find.ancestor(
+      of: find.byTooltip('Deshacer'), matching: find.byType(IconButton),
+    ));
+    expect(undo.onPressed, isNotNull);
+    await tester.tap(find.byTooltip('Deshacer'));
+    await tester.pump();
+    expect(tester.widget<IconButton>(find.ancestor(
+      of: find.byTooltip('Deshacer'), matching: find.byType(IconButton),
+    )).onPressed, isNull);
+  });
+
+  test('layer lock survives editable project round trip', () {
+    final original = DrawingDocument([
+      const DrawingLayer('Referencia', [], locked: true),
+      const DrawingLayer('Tinta', []),
+    ], 1);
+    final restored = DrawingDocument.fromJson(original.toJson());
+    expect(restored.layers.first.locked, isTrue);
+    expect(restored.layers.last.locked, isFalse);
+    expect(() => DrawingDocument.fromJson({
+      'version': 1, 'selected': 0,
+      'layers': [{'name': 'Mal', 'visible': true, 'locked': 'sí', 'strokes': []}],
+    }), throwsFormatException);
+  });
+
   testWidgets('layer opacity changes can be undone', (tester) async {
     await tester.binding.setSurfaceSize(const Size(1200, 850));
     addTearDown(() => tester.binding.setSurfaceSize(null));

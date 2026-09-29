@@ -27,19 +27,23 @@ enum StrokeShape { freehand, line, rectangle, ellipse }
 
 class DrawingLayer {
   const DrawingLayer(this.name, this.strokes,
-      {this.visible = true, this.opacity = 1, this.imageBytes, this.image});
+      {this.visible = true, this.locked = false, this.opacity = 1,
+      this.imageBytes, this.image});
   final String name;
   final List<Stroke> strokes;
   final bool visible;
+  final bool locked;
   final double opacity;
   final Uint8List? imageBytes;
   final ui.Image? image;
 
   DrawingLayer copyWith({String? name, List<Stroke>? strokes, bool? visible,
+      bool? locked,
       double? opacity,
       Uint8List? imageBytes, ui.Image? image}) =>
       DrawingLayer(name ?? this.name, strokes ?? this.strokes,
-          visible: visible ?? this.visible, opacity: opacity ?? this.opacity,
+          visible: visible ?? this.visible, locked: locked ?? this.locked,
+          opacity: opacity ?? this.opacity,
           imageBytes: imageBytes ?? this.imageBytes,
           image: image ?? this.image);
 }
@@ -57,6 +61,7 @@ class DrawingDocument {
             {
               'name': layer.name,
               'visible': layer.visible,
+              if (layer.locked) 'locked': true,
               if (layer.opacity != 1) 'opacity': layer.opacity,
               if (layer.imageBytes != null)
                 'imageData': base64Encode(layer.imageBytes!),
@@ -81,6 +86,8 @@ class DrawingDocument {
     if (json['version'] != 1) throw const FormatException('Versión no compatible');
     final layers = (json['layers'] as List).map((entry) {
       final layer = entry as Map<String, dynamic>;
+      final locked = layer['locked'] ?? false;
+      if (locked is! bool) throw const FormatException('Bloqueo de capa inválido');
       final opacity = (layer['opacity'] as num?)?.toDouble() ?? 1;
       if (!opacity.isFinite || opacity < 0 || opacity > 1) {
         throw const FormatException('Opacidad de capa inválida');
@@ -106,7 +113,7 @@ class DrawingDocument {
             filled: stroke['filled'] == true);
       }).toList();
       return DrawingLayer(layer['name'] as String, strokes,
-          visible: layer['visible'] as bool, opacity: opacity,
+          visible: layer['visible'] as bool, locked: locked, opacity: opacity,
           imageBytes: layer['imageData'] == null
               ? null : base64Decode(layer['imageData'] as String));
     }).toList();
@@ -475,6 +482,7 @@ class _EditorState extends State<Editor> {
     final index = _document.selected + 1;
     layers.insert(index, DrawingLayer('${original.name} copia',
         List.of(original.strokes), visible: original.visible,
+        locked: original.locked,
         opacity: original.opacity,
         imageBytes: original.imageBytes, image: original.image));
     _commit(DrawingDocument(layers, index));
@@ -532,7 +540,8 @@ class _EditorState extends State<Editor> {
       _pickColor(event.localPosition);
       return;
     }
-    if (!_document.layers[_document.selected].visible) return;
+    if (!_document.layers[_document.selected].visible ||
+        _document.layers[_document.selected].locked) return;
     if (_activePointer != null) {
       setState(() => _currentPoints.clear());
       return;
@@ -584,6 +593,10 @@ class _EditorState extends State<Editor> {
     }
     if (_currentPoints.isEmpty) return;
     final layer = _document.layers[_document.selected];
+    if (layer.locked || !layer.visible) {
+      setState(() => _currentPoints.clear());
+      return;
+    }
     final points = List<Offset>.of(_currentPoints);
     if (_tool == CanvasTool.line || _tool == CanvasTool.rectangle ||
         _tool == CanvasTool.ellipse) {
@@ -734,6 +747,17 @@ class _EditorState extends State<Editor> {
             selected: i == _document.selected,
             title: Text(_document.layers[i].name),
             subtitle: Wrap(spacing: 0, runSpacing: 0, children: [
+              IconButton(
+                tooltip: _document.layers[i].locked
+                    ? 'Desbloquear ${_document.layers[i].name}'
+                    : 'Bloquear ${_document.layers[i].name}',
+                icon: Icon(_document.layers[i].locked
+                    ? Icons.lock : Icons.lock_open, size: 18),
+                constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+                padding: EdgeInsets.zero,
+                onPressed: () => _replaceLayer(i, _document.layers[i].copyWith(
+                    locked: !_document.layers[i].locked)),
+              ),
               IconButton(
                 tooltip: 'Subir ${_document.layers[i].name}',
                 icon: const Icon(Icons.arrow_upward, size: 18),
