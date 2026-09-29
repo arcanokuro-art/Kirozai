@@ -7,6 +7,24 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kirozai/main.dart';
 
 void main() {
+  testWidgets('eyedropper reads the visible canvas color', (tester) async {
+    final layers = [
+      DrawingLayer('Rojo', [
+        Stroke([const Offset(10, 10), const Offset(50, 50)],
+            Colors.red, 2, false, shape: StrokeShape.rectangle, filled: true),
+      ]),
+      DrawingLayer('Azul oculto', [
+        Stroke([const Offset(10, 10), const Offset(50, 50)],
+            Colors.blue, 2, false, shape: StrokeShape.rectangle, filled: true),
+      ], visible: false),
+    ];
+    expect((await sampleArtworkColor(layers, const Offset(30, 30)))?.toARGB32(),
+        Colors.red.toARGB32());
+    expect((await sampleArtworkColor(layers, const Offset(80, 80)))?.toARGB32(),
+        Colors.white.toARGB32());
+    expect(await sampleArtworkColor(layers, const Offset(-1, 0)), isNull);
+  });
+
   testWidgets('stroke opacity can be changed', (tester) async {
     await tester.binding.setSurfaceSize(const Size(1200, 850));
     addTearDown(() => tester.binding.setSurfaceSize(null));

@@ -139,7 +139,7 @@ class KirozaiApp extends StatelessWidget {
       );
 }
 
-enum CanvasTool { brush, eraser, line, rectangle, ellipse, navigate }
+enum CanvasTool { brush, eraser, line, rectangle, ellipse, eyedropper, navigate }
 
 class Editor extends StatefulWidget {
   const Editor({super.key});
@@ -520,6 +520,10 @@ class _EditorState extends State<Editor> {
       return;
     }
     if (_tool == CanvasTool.navigate) return;
+    if (_tool == CanvasTool.eyedropper) {
+      _pickColor(event.localPosition);
+      return;
+    }
     if (!_document.layers[_document.selected].visible) return;
     if (_activePointer != null) {
       setState(() => _currentPoints.clear());
@@ -531,6 +535,24 @@ class _EditorState extends State<Editor> {
         ..clear()
         ..add(event.localPosition);
     });
+  }
+
+  Future<void> _pickColor(Offset position) async {
+    try {
+      final sampled = await sampleArtworkColor(_document.layers, position);
+      if (mounted && _tool == CanvasTool.eyedropper && sampled != null) {
+        setState(() {
+          _color = sampled;
+          _opacity = sampled.a;
+        });
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No se pudo tomar el color: $error')),
+        );
+      }
+    }
   }
 
   void _extendStroke(PointerMoveEvent event) {
@@ -624,6 +646,7 @@ class _EditorState extends State<Editor> {
           _toolButton('Línea', Icons.show_chart, CanvasTool.line),
           _toolButton('Rectángulo', Icons.crop_square, CanvasTool.rectangle),
           _toolButton('Elipse', Icons.circle_outlined, CanvasTool.ellipse),
+          _toolButton('Cuentagotas', Icons.colorize, CanvasTool.eyedropper),
           _toolButton('Mover / zoom', Icons.pan_tool_alt, CanvasTool.navigate),
         ]),
         const SizedBox(height: 18),
@@ -912,4 +935,29 @@ class CanvasArtwork extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CanvasArtwork oldDelegate) => true;
+}
+
+Future<Color?> sampleArtworkColor(List<DrawingLayer> layers, Offset position) async {
+  final width = canvasSize.width.toInt();
+  final height = canvasSize.height.toInt();
+  if (position.dx < 0 || position.dy < 0 ||
+      position.dx >= width || position.dy >= height) return null;
+  final recorder = ui.PictureRecorder();
+  final canvas = Canvas(recorder);
+  CanvasArtwork(layers).paint(canvas, canvasSize);
+  final picture = recorder.endRecording();
+  try {
+    final image = await picture.toImage(width, height);
+    try {
+      final data = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+      if (data == null) throw StateError('No se pudo leer el color');
+      final offset = (position.dy.floor() * width + position.dx.floor()) * 4;
+      return Color.fromARGB(data.getUint8(offset + 3), data.getUint8(offset),
+          data.getUint8(offset + 1), data.getUint8(offset + 2));
+    } finally {
+      image.dispose();
+    }
+  } finally {
+    picture.dispose();
+  }
 }
