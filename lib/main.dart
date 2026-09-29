@@ -87,7 +87,9 @@ class DrawingDocument {
     final layers = (json['layers'] as List).map((entry) {
       final layer = entry as Map<String, dynamic>;
       final locked = layer['locked'] ?? false;
-      if (locked is! bool) throw const FormatException('Bloqueo de capa inválido');
+      if (locked is! bool) {
+        throw const FormatException('Bloqueo de capa inválido');
+      }
       final opacity = (layer['opacity'] as num?)?.toDouble() ?? 1;
       if (!opacity.isFinite || opacity < 0 || opacity > 1) {
         throw const FormatException('Opacidad de capa inválida');
