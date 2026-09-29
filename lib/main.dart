@@ -720,7 +720,10 @@ class _EditorState extends State<Editor> {
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Row(children: [
-              Text('Opacidad capa: ${(_document.layers[_document.selected].opacity * 100).round()} %'),
+              Expanded(child: Text(
+                'Opacidad capa: ${(_document.layers[_document.selected].opacity * 100).round()} %',
+                overflow: TextOverflow.ellipsis,
+              )),
               const Icon(Icons.arrow_drop_down),
             ]),
           ),
