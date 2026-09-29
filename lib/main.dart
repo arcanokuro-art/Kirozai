@@ -543,7 +543,9 @@ class _EditorState extends State<Editor> {
       return;
     }
     if (!_document.layers[_document.selected].visible ||
-        _document.layers[_document.selected].locked) return;
+        _document.layers[_document.selected].locked) {
+      return;
+    }
     if (_activePointer != null) {
       setState(() => _currentPoints.clear());
       return;
