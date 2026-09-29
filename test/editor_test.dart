@@ -6,6 +6,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kirozai/main.dart';
 
+Future<void> tapVisible(WidgetTester tester, String tooltip) async {
+  final target = find.byTooltip(tooltip);
+  await tester.ensureVisible(target);
+  await tester.pumpAndSettle();
+  await tester.tap(target);
+}
+
 void main() {
   testWidgets('eyedropper reads the visible canvas color', (tester) async {
     final layers = [
@@ -72,7 +79,7 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(1200, 850));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(const KirozaiApp());
-    await tester.tap(find.byTooltip('Agregar capa'));
+    await tapVisible(tester, 'Agregar capa');
     await tester.pump();
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
@@ -161,7 +168,7 @@ void main() {
 
     expect(find.text('Kirozai'), findsOneWidget);
     expect(find.text('Capa 1'), findsOneWidget);
-    await tester.tap(find.byTooltip('Agregar capa'));
+    await tapVisible(tester, 'Agregar capa');
     await tester.pump();
     expect(find.text('Capa 2'), findsOneWidget);
 
@@ -174,7 +181,7 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(1200, 850));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(const KirozaiApp());
-    await tester.tap(find.byTooltip('Agregar capa'));
+    await tapVisible(tester, 'Agregar capa');
     await tester.pump();
     await tester.ensureVisible(find.byTooltip('Renombrar Capa 2'));
     await tester.pumpAndSettle();
@@ -233,7 +240,7 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(1200, 850));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(const KirozaiApp());
-    await tester.tap(find.byTooltip('Agregar capa'));
+    await tapVisible(tester, 'Agregar capa');
     await tester.pump();
     await tester.tap(find.byTooltip('Archivo'));
     await tester.pumpAndSettle();
@@ -256,7 +263,7 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(1200, 850));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(const KirozaiApp());
-    await tester.tap(find.byTooltip('Duplicar capa seleccionada'));
+    await tapVisible(tester, 'Duplicar capa seleccionada');
     await tester.pump();
     expect(find.text('Capa 1 copia'), findsOneWidget);
     await tester.tap(find.byTooltip('Deshacer'));
@@ -269,7 +276,7 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(const KirozaiApp());
     await tester.pump();
-    await tester.tap(find.byTooltip('Agregar capa'));
+    await tapVisible(tester, 'Agregar capa');
     await tester.pump();
     await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
     await tester.sendKeyDownEvent(LogicalKeyboardKey.keyZ);
@@ -283,7 +290,7 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(1200, 850));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(const KirozaiApp());
-    await tester.tap(find.byTooltip('Agregar capa'));
+    await tapVisible(tester, 'Agregar capa');
     await tester.pump();
     expect(find.text('Kirozai •'), findsOneWidget);
     await tester.tap(find.byTooltip('Archivo'));
