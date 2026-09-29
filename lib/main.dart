@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:file_selector/file_selector.dart';
@@ -11,6 +12,15 @@ import 'package:share_plus/share_plus.dart';
 void main() => runApp(const KirozaiApp());
 
 const canvasSize = Size(1024, 768);
+
+Matrix4 centeredCanvasTransform(Size viewport, {bool actualSize = false}) {
+  final scale = actualSize ? 1.0 :
+      (math.min(viewport.width / canvasSize.width,
+          viewport.height / canvasSize.height) * 0.95).clamp(0.1, 6.0).toDouble();
+  return Matrix4.diagonal3Values(scale, scale, 1)
+    ..setTranslationRaw((viewport.width - canvasSize.width * scale) / 2,
+        (viewport.height - canvasSize.height * scale) / 2, 0);
+}
 
 class Stroke {
   const Stroke(this.points, this.color, this.width, this.erase,
@@ -267,6 +277,17 @@ class _EditorState extends State<Editor> {
   final List<DrawingDocument> _redo = [];
   final TransformationController _transform = TransformationController();
   final List<Offset> _currentPoints = [];
+  Size _viewport = Size.zero;
+  bool _viewInitialized = false;
+
+  void _centerCanvas({bool actualSize = false}) {
+    if (_viewport.isEmpty) return;
+    setState(() {
+      _currentPoints.clear();
+      _activePointer = null;
+    });
+    _transform.value = centeredCanvasTransform(_viewport, actualSize: actualSize);
+  }
   CanvasTool _tool = CanvasTool.brush;
   Color _color = const Color(0xff222634);
   double _width = 8;
@@ -302,7 +323,7 @@ class _EditorState extends State<Editor> {
       _redo.clear();
       _currentPoints.clear();
       _activePointer = null;
-      _transform.value = Matrix4.identity();
+      _transform.value = centeredCanvasTransform(_viewport);
     });
   }
 
@@ -991,11 +1012,22 @@ class _EditorState extends State<Editor> {
         if (!compact) panel,
         Expanded(child: Container(
           color: const Color(0xff303441),
-          child: Center(child: InteractiveViewer(
+          child: LayoutBuilder(builder: (context, constraints) {
+            _viewport = constraints.biggest;
+            if (!_viewInitialized && !_viewport.isEmpty) {
+              _viewInitialized = true;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) _centerCanvas();
+              });
+            }
+            return Stack(children: [
+              Positioned.fill(child: InteractiveViewer(
             transformationController: _transform,
             panEnabled: _tool == CanvasTool.navigate,
             scaleEnabled: true,
-            minScale: 0.2, maxScale: 6,
+            minScale: 0.1, maxScale: 6,
+            alignment: Alignment.topLeft,
+            boundaryMargin: const EdgeInsets.all(1024),
             constrained: false,
             child: Listener(
               onPointerDown: _startStroke,
@@ -1018,7 +1050,30 @@ class _EditorState extends State<Editor> {
                 ),
               ),
             ),
-          )),
+              )),
+              Positioned(right: 12, bottom: 12,
+                child: Material(
+                  color: const Color(0xdd151821),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    IconButton(tooltip: 'Ajustar lienzo',
+                        onPressed: _centerCanvas,
+                        icon: const Icon(Icons.fit_screen)),
+                    ValueListenableBuilder<Matrix4>(
+                      valueListenable: _transform,
+                      builder: (context, matrix, child) => Text(
+                        '${(matrix.getMaxScaleOnAxis() * 100).round()} %',
+                        key: const Key('canvas-zoom'),
+                      ),
+                    ),
+                    IconButton(tooltip: 'Tamaño real (100 %)',
+                        onPressed: () => _centerCanvas(actualSize: true),
+                        icon: const Icon(Icons.center_focus_strong)),
+                  ]),
+                ),
+              ),
+            ]);
+          }),
         )),
       ]),
         ),

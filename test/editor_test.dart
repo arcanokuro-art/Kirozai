@@ -14,6 +14,36 @@ Future<void> tapVisible(WidgetTester tester, String tooltip) async {
 }
 
 void main() {
+  testWidgets('phone canvas fits and view controls do not change artwork', (tester) async {
+    tester.view.physicalSize = const Size(400, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    await tester.pumpWidget(const KirozaiApp());
+    await tester.pumpAndSettle();
+    final viewer = find.byType(InteractiveViewer);
+    final controller = tester.widget<InteractiveViewer>(viewer).transformationController!;
+    final viewport = tester.getSize(viewer);
+    final bounds = MatrixUtils.transformRect(controller.value, Offset.zero & canvasSize);
+    expect(bounds.left, greaterThanOrEqualTo(0));
+    expect(bounds.top, greaterThanOrEqualTo(0));
+    expect(bounds.right, lessThanOrEqualTo(viewport.width));
+    expect(bounds.bottom, lessThanOrEqualTo(viewport.height));
+    await tester.tap(find.byTooltip('Tamaño real (100 %)'));
+    await tester.pump();
+    expect(controller.value.getMaxScaleOnAxis(), 1);
+    expect(find.text('100 %'), findsOneWidget);
+    await tester.tap(find.byTooltip('Ajustar lienzo'));
+    await tester.pump();
+    expect(controller.value.getMaxScaleOnAxis(), lessThan(1));
+    expect(find.text('Kirozai'), findsOneWidget);
+    expect(tester.widget<IconButton>(find.ancestor(
+      of: find.byTooltip('Deshacer'), matching: find.byType(IconButton),
+    )).onPressed, isNull);
+  });
+
   test('hex colors accept exact RGB and reject invalid input', () {
     expect(parseHexColor('#59a7ed'), const Color(0xff59a7ed));
     expect(parseHexColor('  FF0000  '), const Color(0xffff0000));
