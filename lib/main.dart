@@ -17,7 +17,7 @@ Matrix4 centeredCanvasTransform(Size viewport, {bool actualSize = false}) {
   final scale = actualSize ? 1.0 :
       (math.min(viewport.width / canvasSize.width,
           viewport.height / canvasSize.height) * 0.95).clamp(0.1, 6.0).toDouble();
-  return Matrix4.diagonal3Values(scale, scale, 1)
+  return Matrix4.diagonal3Values(scale, scale, scale)
     ..setTranslationRaw((viewport.width - canvasSize.width * scale) / 2,
         (viewport.height - canvasSize.height * scale) / 2, 0);
 }
